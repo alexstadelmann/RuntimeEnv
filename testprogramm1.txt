@@ -1,0 +1,2 @@
+likes(alice,bob).
+:-likes(X,Y),likes(Y,X).
