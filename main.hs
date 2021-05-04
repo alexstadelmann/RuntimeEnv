@@ -1,4 +1,5 @@
 import Tokenizer
+import Syntaxbaum
 import Data.Char
 import Data.List
 type If = String
@@ -41,18 +42,22 @@ nvltMaker xs
 
 
 zielMaker :: String -> Ziel
+zielMaker (x:y:zs)
+                | not (x==':' && y=='-') = error "Ziele fangen mit ':-' an"
 zielMaker xs = Z1 ":-" (map literalMaker $ tokenizerZiele xs) "."
 --
 
 programmklauselMaker :: String -> Programmklausel
+programmklauselMaker (x:xs)
+                | not (isAlpha x) || isUpper x = error "Namen fangen mit einem Kleinbuchstaben an"
 programmklauselMaker xs
                 | ':' `elem` xs = PK2 (NVLT1 (fst(break (\a -> a == ':') xs))) (zielMaker $ snd(break (\a -> a == ':') xs))
                 | otherwise = PK1 (nvltMaker xs) "."
 
 programmMaker :: String -> Programm
 programmMaker (x:xs)
-            | x == ':' = P1 (zielMaker (x:xs))
-            | otherwise = P2 (map programmklauselMaker $ tokenizerKlauseln $ fst(break (\a -> a == ':') (x:xs))) (zielMaker $ snd(break (\a -> a == ':') (x:xs)))
+            | x == ':' = P1 (zielMaker $ init (x:xs))
+            | otherwise = P2 (map programmklauselMaker $ init $ tokenizerKlauseln (x:xs) ) (zielMaker $ init $ last $ tokenizerKlauseln (x:xs))
 
 
 isValid:: Char -> Bool
@@ -65,5 +70,5 @@ isValidString xs = foldr (\x acc -> if isValid x then acc else False) True xs
 main = do
   contents <- readFile "testprogramm1.txt"
   putStrLn contents
-  if isValidString contents then writeFile "ergebnis.txt" $ show (programmMaker contents)
+  if isValidString contents then writeFile "ergebnis.txt" $ syntaxmaker $ show (programmMaker contents)
   else writeFile "ergebnis.txt" ""
