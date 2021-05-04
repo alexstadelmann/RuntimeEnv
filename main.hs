@@ -8,9 +8,7 @@ type Name = String
 type Variable = String
 
 
--- | NV3 Name (LTerm, LTerm) | NV4 Name (LTerm, LTerm, LTerm) deriving (Show)
--- | P2 Programmklausel Ziel | P3 Programmklausel Programmklausel Ziel| P4 Programmklausel Programmklausel Programmklausel Ziel deriving (Show)
---  |Z3 If Literal K Literal Pt K Literal Pt deriving (Show)
+
 data Programm = P1 Ziel | P2 [Programmklausel] Ziel  deriving (Show)
 data Programmklausel = PK1 NVLT Pt |PK2 NVLT Ziel deriving (Show)
 
@@ -20,7 +18,7 @@ data NVLT = NVLT1 Name | NVLT2 Name [LTerm]  deriving (Show)
 
 data Literal =L1 Not LTerm |L2 LTerm deriving (Show)
 
-data Ziel =Z1 If [Literal] Pt deriving (Show)-- |Z2 If (Literal, Literal) Pt deriving (Show)
+data Ziel =Z1 If [Literal] Pt deriving (Show)
 
 
 literalMaker :: String -> Literal
