@@ -4,9 +4,10 @@ module Tokenizer
 , tokenizerKlauseln
 ) where
 
+import Data.List
 
 tokenizerZiele:: String -> [String]
-tokenizerZiele xs = tokenizerZiele' (filter(\a -> a /= '\n' && a /= '\r') xs) [] []
+tokenizerZiele xs =  tokenizerZiele' (filter(\a -> a /= '\n' && a /= '\r') (delete ':'(delete '-' xs))) [] []
 
 
 --Hilfsfunktion:
@@ -25,7 +26,9 @@ tokenizerLTerme xs = tokenizerLTerme' (filter(\a -> a /= '\n' && a /= '\r' && a 
 
 --Hilfsfunktion:
 tokenizerLTerme' :: String -> String -> [String] -> [String]
-tokenizerLTerme' [] wacc lacc = reverse((reverse wacc):lacc)
+tokenizerLTerme' [] wacc lacc
+    | wacc == [] && lacc == [] = []
+    | otherwise = reverse((reverse wacc):lacc)
 tokenizerLTerme' (x:xs) wacc lacc
     | x == ' ' && wacc == "" = tokenizerLTerme' xs "" lacc
     | x == ' ' = error "Lehrzeichen wo es nicht sein darf!"
@@ -42,5 +45,5 @@ tokenizerKlauseln xs = tokenizerKlauseln' (filter(\a -> a /= '\n' && a /= '\r') 
 tokenizerKlauseln' :: String -> String -> [String] -> [String]
 tokenizerKlauseln' [] wacc lacc = if wacc /= "" then reverse((reverse wacc):lacc) else reverse lacc
 tokenizerKlauseln' (x:xs) wacc lacc
-    | x == '.' = tokenizerKlauseln' xs "" ((reverse (x:wacc)):lacc)
+    | x == '.' = tokenizerKlauseln' xs "" ((reverse (wacc)):lacc)
     | otherwise = tokenizerKlauseln' xs (x:wacc) lacc
