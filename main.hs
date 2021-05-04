@@ -10,54 +10,62 @@ type Variable = String
 
 
 
-data Programm = P1 Ziel | P2 [Programmklausel] Ziel  deriving (Show)
-data Programmklausel = PK1 NVLT Pt |PK2 NVLT Ziel deriving (Show)
+data Programm = P [Klausel] Ziel  deriving (Show)
 
-data LTerm = LT1 Variable |LT2 NVLT deriving (Show)
+data Klausel = K1 NVLT Pt |K2 NVLT Ziel deriving (Show)
 
-data NVLT = NVLT1 Name | NVLT2 Name [LTerm]  deriving (Show)
+data Term = TV Variable |T NVLT | Empty deriving (Show)
 
-data Literal =L1 Not LTerm |L2 LTerm deriving (Show)
+data NVLT = NVLT Name [Term]  deriving (Show)
 
-data Ziel =Z1 If [Literal] Pt deriving (Show)
+data Literal = LNot Not Term |L Term deriving (Show)
+
+data Ziel = Z If [Literal] Pt deriving (Show)
+
 
 
 literalMaker :: String -> Literal
-literalMaker ('n':'o':'t':xs) = L1 "not" (lTermMaker xs)
-literalMaker xs = L2 (lTermMaker xs)
+literalMaker ('n':'o':'t':xs) = LNot "not" (termMaker xs)
+literalMaker xs = L (termMaker xs)
 
 
-lTermMaker :: String -> LTerm
-lTermMaker (x:xs)
-    | isUpper x = LT1 (x:xs)
-    | x == '(' = LT2 (nvltMaker $ filter (\a -> a /= '(' &&  a /= ')') (x:xs))
-    | otherwise = LT2 (nvltMaker (x:xs))
+--was ist mit dem leeren String?
+termMaker :: String -> Term
+termMaker "" = Empty
+termMaker (x:xs)
+    | isUpper x = TV (x:xs)
+    | otherwise = T (nvltMaker (x:xs))
 
 
 
 nvltMaker :: String -> NVLT
-nvltMaker xs
-          | '(' `notElem` xs = NVLT1 xs
-          | otherwise = NVLT2 (fst(break (\a -> a == '(') xs)) (map lTermMaker $ tokenizerLTerme $ snd(break (\a -> a =='(') xs))
+
+nvltMaker xs = NVLT (fst(break (\a -> a == '(') xs)) (map termMaker $ tokenizerLTerme $ snd(break (\a -> a =='(') xs))
+
 
 
 zielMaker :: String -> Ziel
 zielMaker (x:y:zs)
-                | not (x==':' && y=='-') = error "Ziele fangen mit ':-' an"
-zielMaker xs = Z1 ":-" (map literalMaker $ tokenizerZiele xs) "."
---
+                | not (x==':' && y=='-') = error "Programme enthalten immer ein Ziel als letzte Klausel und Ziele fangen mit ':-' an"
+                | otherwise = Z ":-" (map literalMaker $ tokenizerZiele zs) "."
 
-programmklauselMaker :: String -> Programmklausel
-programmklauselMaker (x:xs)
-                | not (isAlpha x) || isUpper x = error "Namen fangen mit einem Kleinbuchstaben an"
-programmklauselMaker xs
-                | ':' `elem` xs = PK2 (NVLT1 (fst(break (\a -> a == ':') xs))) (zielMaker $ snd(break (\a -> a == ':') xs))
-                | otherwise = PK1 (nvltMaker xs) "."
 
+
+klauselMaker :: String -> Klausel
+klauselMaker (x:xs)
+                | not (isAlpha x) || isUpper x = error "Programmklauseln fangen mit einem Kleinbuchstaben an"
+klauselMaker xs
+                | ':' `elem` xs = K2 ((nvltMaker $ fst(break (\a -> a == ':') xs))) (zielMaker $ snd(break (\a -> a == ':') xs))
+                | otherwise = K1 (nvltMaker xs) "."
+
+
+--tokenizerKlauseln generiert eine Liste von Strings.
+--Das letzte Element ist ein Ziel und wird mit last ausgewählt.
+--Die Vorgänger-Klauseln werden mit init ausgewählt.
 programmMaker :: String -> Programm
-programmMaker (x:xs)
-            | x == ':' = P1 (zielMaker $ init (x:xs))
-            | otherwise = P2 (map programmklauselMaker $ init $ tokenizerKlauseln (x:xs) ) (zielMaker $ init $ last $ tokenizerKlauseln (x:xs))
+programmMaker xs = P (map klauselMaker $ init $ tokenizerKlauseln xs ) (zielMaker $ last $ tokenizerKlauseln xs)
+
+
 
 
 isValid:: Char -> Bool
@@ -70,5 +78,5 @@ isValidString xs = foldr (\x acc -> if isValid x then acc else False) True xs
 main = do
   contents <- readFile "testprogramm1.txt"
   putStrLn contents
-  if isValidString contents then writeFile "ergebnis.txt" $ syntaxmaker $ show (programmMaker contents)
+  if isValidString contents then writeFile "ergebnis.txt" {-$ syntaxmaker-} $ show (programmMaker contents)
   else writeFile "ergebnis.txt" ""

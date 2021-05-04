@@ -21,7 +21,10 @@ tokenizerZiele' (x:xs) wacc lacc
 
 
 tokenizerLTerme:: String -> [String]
-tokenizerLTerme xs = tokenizerLTerme' (filter(\a -> a /= '\n' && a /= '\r' && a /= '(' && a /= ')') xs) [] []
+tokenizerLTerme xs
+                | xs == "" = []
+                | head xs /= '(' || last xs /= ')' = error "Terme kommen immer in Klammern vor!"
+                | otherwise = tokenizerLTerme' (filter(\a -> a /= '\n' && a /= '\r') $ init $ tail xs) [] []
 
 
 --Hilfsfunktion:
@@ -32,13 +35,16 @@ tokenizerLTerme' [] wacc lacc
 tokenizerLTerme' (x:xs) wacc lacc
     | x == ' ' && wacc == "" = tokenizerLTerme' xs "" lacc
     | x == ' ' = error "Lehrzeichen wo es nicht sein darf!"
-    | x == ',' = tokenizerLTerme' xs "" ((reverse (wacc)):lacc)
+    | x == ',' && '(' `notElem` wacc = tokenizerLTerme' xs "" ((reverse (wacc)):lacc)
     | otherwise = tokenizerLTerme' xs (x:wacc) lacc
 
 
 
 tokenizerKlauseln:: String -> [String]
-tokenizerKlauseln xs = tokenizerKlauseln' (filter(\a -> a /= '\n' && a /= '\r') xs) [] []
+tokenizerKlauseln xs
+    | (last xs) /= '.' = error "Jede Klausel endet mit einem Punkt!"
+    | otherwise = tokenizerKlauseln' (filter(\a -> a /= '\n' && a /= '\r') xs) [] []
+
 
 
 --Hilfsfunktion:
