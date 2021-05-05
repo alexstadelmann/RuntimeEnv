@@ -41,8 +41,9 @@ tokenizerLTerme' (x:xs) wacc lacc
 
 
 tokenizerKlauseln:: String -> [String]
+tokenizerKlauseln "" = error "Klausel leer!"
 tokenizerKlauseln xs
-    | (last xs) /= '.' = error "Jede Klausel endet mit einem Punkt!"
+    | (last $ (filter(\a -> a /= '\n' && a /= '\r') xs)) /= '.' = error "Jede Klausel endet mit einem Punkt!"
     | otherwise = tokenizerKlauseln' (filter(\a -> a /= '\n' && a /= '\r') xs) [] []
 
 
