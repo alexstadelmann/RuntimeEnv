@@ -31,7 +31,7 @@ literalMaker xs = L (termMaker xs)
 
 --was ist mit dem leeren String?
 termMaker :: String -> Term
-termMaker "" = Empty
+termMaker "" = error "Versuch einen LTerm vom leeren String zu machen"
 termMaker (x:xs)
     | isUpper x = TV (x:xs)
     | otherwise = T (nvltMaker (x:xs))
@@ -39,7 +39,7 @@ termMaker (x:xs)
 
 
 nvltMaker :: String -> NVLT
-
+nvltMaker "" = error "Versuch einen NVLT vom leeren String zu machen"
 nvltMaker xs = NVLT (fst(break (\a -> a == '(') xs)) (map termMaker $ tokenizerLTerme $ snd(break (\a -> a =='(') xs))
 
 
@@ -63,6 +63,7 @@ klauselMaker xs
 --Das letzte Element ist ein Ziel und wird mit last ausgewählt.
 --Die Vorgänger-Klauseln werden mit init ausgewählt.
 programmMaker :: String -> Programm
+programmMaker "" = error "Eingabe leer"
 programmMaker xs = P (map klauselMaker $ init $ tokenizerKlauseln xs ) (zielMaker $ last $ tokenizerKlauseln xs)
 
 
@@ -77,6 +78,6 @@ isValidString xs = foldr (\x acc -> if isValid x then acc else False) True xs
 
 main = do
   contents <- readFile "testprogramm1.txt"
-  putStrLn contents
+  --putStrLn contents
   if isValidString contents then writeFile "ergebnis.txt" {-$ syntaxmaker-} $ show (programmMaker contents)
-  else writeFile "ergebnis.txt" ""
+  else writeFile "ergebnis.txt" "Eingabe enthält unzulässige Zeichen"
