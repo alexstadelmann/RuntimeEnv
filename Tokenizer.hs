@@ -1,56 +1,50 @@
 module Tokenizer
-( tokenizerZiele
-, tokenizerLTerme
-, tokenizerKlauseln
+(nextSymbol,
+Symbol(..)
 ) where
 
-import Data.List
 
-tokenizerZiele:: String -> [String]
-tokenizerZiele xs =  tokenizerZiele' (filter(\a -> a /= '\n' && a /= '\r') (delete ':'(delete '-' xs))) [] []
-
-
---Hilfsfunktion:
-tokenizerZiele' :: String -> String -> [String] -> [String]
-tokenizerZiele' [] wacc lacc = reverse((reverse wacc):lacc)
-tokenizerZiele' (x:xs) wacc lacc
-    | x == ' ' && wacc == "" = tokenizerZiele' xs "" lacc
-    | x == ' ' = error "Lehrzeichen wo es nicht sein darf!"
-    | x == ',' && (head wacc) == ')' = tokenizerZiele' xs "" ((reverse (wacc)):lacc)
-    | otherwise = tokenizerZiele' xs (x:wacc) lacc
-
-
-tokenizerLTerme:: String -> [String]
-tokenizerLTerme xs
-                | xs == "" = []
-                | head xs /= '(' || last xs /= ')' = error "Terme kommen immer in Klammern vor!"
-                | otherwise = tokenizerLTerme' (filter(\a -> a /= '\n' && a /= '\r') $ init $ tail xs) [] []
-
-
---Hilfsfunktion:
-tokenizerLTerme' :: String -> String -> [String] -> [String]
-tokenizerLTerme' [] wacc lacc
-    | wacc == [] && lacc == [] = []
-    | otherwise = reverse((reverse wacc):lacc)
-tokenizerLTerme' (x:xs) wacc lacc
-    | x == ' ' && wacc == "" = tokenizerLTerme' xs "" lacc
-    | x == ' ' = error "Lehrzeichen wo es nicht sein darf!"
-    | x == ',' && '(' `notElem` wacc = tokenizerLTerme' xs "" ((reverse (wacc)):lacc)
-    | otherwise = tokenizerLTerme' xs (x:wacc) lacc
+import Data.Char
 
 
 
-tokenizerKlauseln:: String -> [String]
-tokenizerKlauseln "" = error "Klausel leer!"
-tokenizerKlauseln xs
-    | (last $ (filter(\a -> a /= '\n' && a /= '\r') xs)) /= '.' = error "Jede Klausel endet mit einem Punkt!"
-    | otherwise = tokenizerKlauseln' (filter(\a -> a /= '\n' && a /= '\r') xs) [] []
+--alle möglichen Terminalsymbole
+data Symbol = Variable String | Name String | LBracket | RBracket | Not | If | Point | And deriving (Show)
+
+nextSymbol:: String -> [Symbol]
+nextSymbol "" = []
+nextSymbol xs =  nextSymbol' (filter(\a -> a `notElem` [' ', '\n', '\r']) xs) "" []
+
+
+nextSymbol' :: String -> String -> [Symbol] -> [Symbol]
+--kein nächstes Zeichen:
+nextSymbol' "" "" listenacc = reverse (listenacc)
+nextSymbol' "" symbolacc listenacc
+    | isUpper $ last symbolacc = reverse ((Variable (reverse symbolacc)):listenacc)
+    | otherwise = reverse ((Name (reverse symbolacc)):listenacc)
+
+--nächste drei Zeichen "not":
+nextSymbol' ('n':'o':'t':xs) "" listenacc= nextSymbol' xs "" (Not:listenacc)
+
+--nächste zwei Zeichen ":-"
+nextSymbol' (':':'-':xs) "" listenacc= nextSymbol' xs "" (If: listenacc)
+nextSymbol' xxs@(':':'-':xs) symbolacc listenacc
+    | isUpper $ last symbolacc = nextSymbol' xxs "" ((Variable (reverse symbolacc)):listenacc)
+    | otherwise = nextSymbol' xxs "" ((Name (reverse symbolacc)):listenacc)
+
+--nächstes Zeichen Point, Komma, LBracket oder RBracket
+nextSymbol' (x:xs) "" listenacc
+    | x == '.' = nextSymbol' xs "" (Point:listenacc)
+    | x == ',' = nextSymbol' xs "" (And:listenacc)
+    | x == '(' = nextSymbol' xs "" (LBracket:listenacc)
+    | x == ')' = nextSymbol' xs "" (RBracket:listenacc)
+nextSymbol' (x:xs) symbolacc listenacc
+    | not $ isValid x = error ("unerlaubes Zeichen: " ++ show x)
+    | x == '.' || x == ',' || x == '(' || x == ')' = if (isUpper $ last symbolacc) then nextSymbol' (x:xs) "" ((Variable (reverse symbolacc)):listenacc) else nextSymbol' (x:xs) "" ((Name (reverse symbolacc)):listenacc)
+    | otherwise = nextSymbol' xs (x:symbolacc) listenacc
 
 
 
---Hilfsfunktion:
-tokenizerKlauseln' :: String -> String -> [String] -> [String]
-tokenizerKlauseln' [] wacc lacc = if wacc /= "" then reverse((reverse wacc):lacc) else reverse lacc
-tokenizerKlauseln' (x:xs) wacc lacc
-    | x == '.' = tokenizerKlauseln' xs "" ((reverse (wacc)):lacc)
-    | otherwise = tokenizerKlauseln' xs (x:wacc) lacc
+
+isValid:: Char -> Bool
+isValid x = isAlphaNum x || x == '(' || x == ')'|| x == ',' ||x== '.' || x==' ' || x=='\n' || x=='\r'
