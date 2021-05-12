@@ -9,11 +9,9 @@ data Symbol = Point
 
 
 parse :: [Symbol] -> Bool
-parse symbs = parse' $ programm symbs where
-
-  parse' :: [Symbol] -> Bool
-  parse' [] = True
-  parse' _ = error "Parsing went wrong."
+parse symbs = case programm symbs of
+  [] -> True
+  _ -> error "Parsing went wrong."
 
 
 programm :: [Symbol] -> [Symbol]
