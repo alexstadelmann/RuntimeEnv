@@ -56,32 +56,28 @@ data LTerm = Var String
              deriving (Show, Eq)
 
 
-evaluate :: Programm -> Either String Substitution
-evaluate _ = error "TODO"
-
-
-translate :: Programm -> [Command]
+translate :: Programm -> PCode
 translate (Programm pks z) =
-    (concat (map translate' pks)) ++ (translateBody (Just z)) ++ [Prompt] where
+    concat (map translate' pks) ++ translateBody (Just z) ++ [Prompt] where
 
-    translate' :: PKlausel -> [Command]
+    translate' :: PKlausel -> PCode
     translate' (PKlausel nvlt z) =
-        (translateHead nvlt) ++ (translateBody z) ++ [Return]
+        translateHead nvlt ++ translateBody z ++ [Return]
 
 
-translateHead :: NVLTerm -> [Command]
+translateHead :: NVLTerm -> PCode
 translateHead (NVLTerm s _) = [Unify s, Backtrack]
 
 
-translateBody :: Maybe Ziel -> [Command]
+translateBody :: Maybe Ziel -> PCode
 translateBody Nothing = []
 translateBody (Just (Ziel ls)) = concat (map translateBody' ls) where
 
-    translateBody' :: Literal -> [Command]
+    translateBody' :: Literal -> PCode
     translateBody' (Literal _ lt) =
         case lt of NVar nvlt -> translateBody'' nvlt
 
-    translateBody'' :: NVLTerm -> [Command]
+    translateBody'' :: NVLTerm -> PCode
     translateBody'' (NVLTerm s _) = [Push s, Call, Backtrack]
 
 
