@@ -61,7 +61,7 @@ ziel (If:t) = ziel' t [] where
 
     ziel'' :: [Symbol] -> [Literal] -> ([Symbol], Ziel)
     ziel'' (And:t) ls = ziel' t ls
-    ziel'' (Point:t) ls = (t, Ziel ls)
+    ziel'' (Point:t) ls = (t, Ziel (reverse ls))
     ziel'' _ _ = error "Parsing went wrong."
 
 ziel _ = error "Parsing went wrong."
@@ -90,7 +90,7 @@ nvlterm ((Name n):t) = nvlterm' t n where
 
     nvlterm''' :: [Symbol] -> String -> [LTerm] -> ([Symbol], NVLTerm)
     nvlterm''' (And:t) n lts = nvlterm'' t n lts
-    nvlterm''' (RBracket:t) n lts = (t, NVLTerm n lts)
+    nvlterm''' (RBracket:t) n lts = (t, NVLTerm n (reverse lts))
     nvlterm''' _ _ _ = error "Parsing went wrong"
 
 nvlterm _ = error "Parsing went wrong"
