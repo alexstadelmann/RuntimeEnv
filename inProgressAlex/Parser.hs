@@ -1,8 +1,7 @@
 import DeklarationenTest
 import Tokenizer
-import A1
-import A2
-import A4
+
+import A3
 
 
 
@@ -10,12 +9,6 @@ parse :: [Symbol] -> Programm
 parse s = case programm s [] of
                ([], p) -> p
                _ -> error "Parsing went wrong."
-
---von mir (Alex) eingefügt:
-parse' :: [Symbol] -> (Programm, Substitution)
-parse' s = case (programm s [], ident s) of
-                (([], p), xs) -> (p, xs)
-                _ -> error "Parsing went wrong."
 
 
 programm :: [Symbol] -> [PKlausel] -> ([Symbol], Programm)

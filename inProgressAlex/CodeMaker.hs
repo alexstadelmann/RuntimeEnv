@@ -18,8 +18,9 @@ code' ((PKlausel a (Just (Ziel b))):xs) ys =
 --LTerme sind in MiniL Atome (hier einzelne Kleinbuchstaben) und es kommen keine negierten Atome vor.
 codeBody :: [Literal] -> PCode -> PCode
 codeBody [] ys = ys
-codeBody ((Literal false (NVar (NVLTerm x _))):xs) ys =
+codeBody ((Literal _ (NVar (NVLTerm x _))):xs) ys =
   ys ++ [Push x, Call, Backtrack] ++ codeBody xs []
+codeBody _ _ = error "MiniL kann noch nicht Alles!"
 
 --in MiniL nur nullstellige NVLTerme
 codeHead :: NVLTerm -> PCode

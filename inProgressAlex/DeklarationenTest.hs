@@ -1,4 +1,5 @@
 module DeklarationenTest (
+Stack,
 PCode,
 Command(..),
 Mix(..),
@@ -13,18 +14,19 @@ NVLTerm(..),
 LTerm(..),
 Substitution,
 ) where
+type Stack = [Mix]
 
 type PCode = [Command]
 
-data Command = Push String | Unify String | Call | Return | Backtrack | Promt deriving (Show)
+data Command = Push String | Unify String | Call | Return | Backtrack | Prompt deriving (Show)
 
 data Mix = Pklausel' PKlausel | Literal' Literal | Int Int | Bool Bool | LTerm' LTerm | String String | Empty deriving (Show)
 
-data Register = Register{i:: Int, b:: Bool, t:: Int, c :: Int, r:: Int, p:: Int} deriving (Show)
+data Register = Register{inst:: Int, back:: Bool, top:: Int, choice :: Int, ret:: Int, pcounter:: Int} deriving (Show)
 
 type Substitution = [(String, String)]
 
---im Folgenden Deklarationen insbesondere für den Tokenizer und für den Parser
+--Deklarationen (insbesondere) für den Tokenizer und für den Parser
 data Symbol = Variable String | Name String | LBracket | RBracket | Not | If | Point | And deriving (Show)
 
 data Programm = Programm [PKlausel] Ziel deriving (Show)
