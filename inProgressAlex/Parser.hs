@@ -1,7 +1,8 @@
-import Deklarationen
+import DeklarationenTest
 import Tokenizer
 import A1
 import A2
+import A4
 
 
 

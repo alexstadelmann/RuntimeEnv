@@ -4,7 +4,7 @@ module Tokenizer
 
 
 import Data.Char
-import Deklarationen
+import DeklarationenTest
 
 nextSymbol:: String -> [Symbol]
 nextSymbol "" = []

@@ -7,8 +7,10 @@ Literal(..),
 IstNegiert,
 NVLTerm(..),
 LTerm(..),
-Substitution
+Substitution,
 ) where
+
+
 
 
 data Symbol = Variable String | Name String | LBracket | RBracket | Not | If | Point | And deriving (Show)
