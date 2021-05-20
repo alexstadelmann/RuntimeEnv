@@ -8,10 +8,16 @@ data Command = Push String
              | Prompt
                deriving (Show)
 
-data Env = Env{klauseln :: [Int], ziel :: Int, letzte :: Int}
+data Env = Env {klauseln :: [Int], ziel :: Int, letzte :: Int}
     deriving (Show)
 
-data Register = Register{i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
+data StackElem = Zahl Int
+               | Atom NVLTerm
+                 deriving (Show)
+
+type Stack = [StackElem]
+
+data Register = Register {i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
     deriving (Show)
 
 type Substitution = [(String, String)]
@@ -65,7 +71,7 @@ translateHead (NVLTerm s _) = [Unify s, Backtrack]
 
 translateBody :: Maybe Ziel -> PCode
 translateBody Nothing = []
-translateBody (Just (Ziel ls)) = concat (map translateBody' ls) where
+translateBody (Just (Ziel ls)) = concat $ map translateBody' ls where
 
     translateBody' :: Literal -> PCode
     translateBody' (Literal _ lt) =
@@ -85,21 +91,21 @@ createEnv = createEnv' [] 0 0 where
     createEnv' ks z c (_:t) = createEnv' ks z (c+1) t
 
 
-c_first :: Env -> Maybe Int
+c_first :: Env -> Int
 c_first env = case klauseln env of
-                   [] -> Nothing
-                   ks -> Just $ head ks
+                   [] -> -1
+                   ks -> head ks
 
 
-c_next :: Env -> Int -> Maybe Int
-c_next env = c_next' (klauseln env) where
+c_next :: Env -> Int -> Int
+c_next env = c_next' $ klauseln env where
 
-    c_next' :: [Int] -> Int -> Maybe Int
+    c_next' :: [Int] -> Int -> Int
     c_next' (h:t) i
         | h /= i = c_next' t i
         | otherwise = case t of
-                           (x:_) -> Just x
-                           _ -> Nothing
+                           (x:_) -> x
+                           _ -> -1
 
 
 c_goal :: Env -> Int
@@ -108,6 +114,35 @@ c_goal = ziel
 
 c_last :: Env -> Int
 c_last = letzte
+
+
+push :: NVLTerm -> Stack -> Env ->  Register -> (Stack, Register)
+push at st env reg =
+    ((Atom at):(Zahl $ (p reg) + 3):(Zahl $ c reg):(Zahl $ c_first env):st,
+        reg {c = (t reg)+1, r = (t reg)+2, t = (t reg)+4, p = (p reg) + 1})
+
+
+unify :: NVLTerm -> Stack -> Register -> Register
+unify at st reg = reg {b = (getAtomAt st $ (c reg) + 3) /= at, p = (p reg) + 1}
+
+
+getAt :: Stack -> Int -> StackElem
+getAt [] _ = error "Index out of bounds"
+getAt (h:t) i
+    | i == 0 = h
+    | otherwise = getAt t $ i-1
+
+
+getNumAt :: Stack -> Int -> Int
+getNumAt st i = case getAt st i of
+                     Zahl z -> z
+                     _ -> error "No number  saved at this stack position"
+
+
+getAtomAt :: Stack -> Int -> NVLTerm
+getAtomAt st i = case getAt st i of
+                     Atom a -> a
+                     _ -> error "No number  saved at this stack position"
 
 
 
