@@ -1,5 +1,6 @@
-import DeklarationenTest
+import Declarations
 import Tokenizer
+import Translator
 
 import A3
 
