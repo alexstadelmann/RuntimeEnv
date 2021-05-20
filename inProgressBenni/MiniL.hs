@@ -50,10 +50,6 @@ data LTerm = Var String
              deriving (Show, Eq)
 
 
-evaluate :: Programm -> Either String Substitution
-evaluate _ = error "TODO"
-
-
 translate :: Programm -> PCode
 translate (Programm pks z) =
     concat (map translate' pks) ++ translateBody (Just z) ++ [Prompt] where
