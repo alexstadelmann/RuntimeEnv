@@ -28,7 +28,7 @@ data Command = Push String
              | Return
              | Backtrack
              | Prompt
-               deriving (Show)
+               deriving (Show, Eq)
 
 
 data Register = Register{inst:: Int, backQ:: Bool, top:: Int, choice :: Int, ret:: Int, pcounter:: Int} 
