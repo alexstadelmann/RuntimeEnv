@@ -16,7 +16,7 @@ module Declarations (
 ) where
 type Stack = [StackElem]
 
-data StackElem = Zahl Int | Atom String
+data StackElem = Zahl Int | Atom String deriving (Show, Eq)
 type PCode = [Command]
 
 data Env = Env{klauseln :: [Int], goal :: Int, letzte :: Int}
@@ -31,7 +31,7 @@ data Command = Push String
                deriving (Show)
 
 
-data Register = Register{inst:: Int, back:: Bool, top:: Int, choice :: Int, ret:: Int, pcounter:: Int} 
+data Register = Register{inst:: Int, backQ:: Bool, top:: Int, choice :: Int, ret:: Int, pcounter:: Int} 
     deriving (Show)
 
 data Register' = Register' Int Bool Int Int Int Int
