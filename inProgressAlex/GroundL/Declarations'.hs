@@ -1,7 +1,7 @@
-module Declarations (
+module Declarations' (
     Stack,
-    StackElem(..),
     LTermElem(..),
+    StackElem(..),
     PCode,
     Env(..),
     Command(..),
@@ -17,19 +17,21 @@ module Declarations (
 ) where
 type Stack = [StackElem]
 
-
 data StackElem = Zahl Int | Atom String deriving (Show, Eq)
-data LTermElem = STR String Int | VAR String Int deriving (Show)
+data LTermElem = STR String Int | VAR String Int deriving (Show, Eq)
+
 type PCode = [Command]
 
 data Env = Env{klauseln :: [Int], goal :: Int, letzte :: Int}
     deriving (Show)
 
-data Command = Push String
-             | Unify String
+data Command = Push LTermElem
+             | PushCHP
+             | PushEND
+             | Unify LTermElem
              | Call
              | Return
-             | Backtrack
+             | BacktrackQ
              | Prompt
                deriving (Show, Eq)
 

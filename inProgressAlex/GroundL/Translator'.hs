@@ -1,5 +1,7 @@
-module Translator(
+module Translator'(
    translate,
+   linNVLTerm,
+   linLTerm,
    createEnv,
    c_first,
    c_next,
@@ -8,7 +10,7 @@ module Translator(
    testProgramm 
 ) where
 
-import Declarations
+import Declarations'
 
 linNVLTerm :: NVLTerm -> [LTermElem]
 linNVLTerm (NVLTerm a []) = [STR a 0]
@@ -31,19 +33,28 @@ translate (Programm pks z) =
 
 
 translateHead :: NVLTerm -> PCode
-translateHead (NVLTerm s _) = [Unify s, Backtrack]
+translateHead x = translateUnify $ linNVLTerm x
+
+translateUnify :: [LTermElem] -> PCode 
+translateUnify xs = concat (map translateUnify' xs) where
+
+    translateUnify' :: LTermElem -> PCode
+    translateUnify' x = [Unify x, BacktrackQ]
 
 
 translateBody :: Maybe Ziel -> PCode
 translateBody Nothing = []
-translateBody (Just (Ziel ls)) = concat (map translateBody' ls) where
+translateBody (Just (Ziel ls)) = concatMap translateBody' ls where
 
     translateBody' :: Literal -> PCode
     translateBody' (Literal _ lt) =
-        case lt of NVar nvlt -> translateBody'' nvlt
+        case lt of NVar nvlt -> [PushCHP] ++ (translatePush $ linNVLTerm nvlt) ++ [PushEND, Call, BacktrackQ, Return] where
 
-    translateBody'' :: NVLTerm -> PCode
-    translateBody'' (NVLTerm s xs) = [Push s, Call, Backtrack]
+    translatePush :: [LTermElem] -> PCode
+    translatePush xs = concatMap translatePush' xs where
+        
+        translatePush' :: LTermElem -> PCode
+        translatePush' x = [Push x]
 
 
 createEnv :: PCode -> Env

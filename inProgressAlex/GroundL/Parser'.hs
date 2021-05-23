@@ -1,6 +1,6 @@
-import Declarations
-import Tokenizer
-import Translator
+import Declarations'
+import Tokenizer'
+import Translator'
 
 --import MiniL
 
