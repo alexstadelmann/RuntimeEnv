@@ -31,7 +31,7 @@ translate (Programm pks z) =
 
 
 translateHead :: NVLTerm -> PCode
-translateHead (NVLTerm s _) = [Unify s, Backtrack]
+translateHead (NVLTerm s _) = [Unify (Atom s), Backtrack]
 
 
 translateBody :: Maybe Ziel -> PCode
@@ -43,7 +43,7 @@ translateBody (Just (Ziel ls)) = concat (map translateBody' ls) where
         case lt of NVar nvlt -> translateBody'' nvlt
 
     translateBody'' :: NVLTerm -> PCode
-    translateBody'' (NVLTerm s xs) = [Push s, Call, Backtrack]
+    translateBody'' (NVLTerm s _) = [Push (Atom s), Call, Backtrack]
 
 
 createEnv :: PCode -> Env
@@ -83,7 +83,7 @@ c_last = letzte
 
 
 testProgramm :: Programm
-testProgramm = Programm [k1, k2, k3] z1
+testProgramm = Programm [k1, k2, k3] z3
 
 k1 :: PKlausel
 k1 = PKlausel p (Just z1)
@@ -102,6 +102,9 @@ z2 = Ziel [Literal False (NVar r)]
 
 z3 :: Ziel
 z3 = Ziel [Literal False (NVar p), Literal False (NVar r)]
+
+z4 :: Ziel
+z4 = Ziel [Literal False (NVar p)]
 
 p :: NVLTerm
 p = NVLTerm "p" []

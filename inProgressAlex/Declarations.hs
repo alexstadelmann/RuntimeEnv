@@ -1,5 +1,6 @@
 module Declarations (
     Stack,
+    Result,
     StackElem(..),
     LTermElem(..),
     PCode,
@@ -16,6 +17,7 @@ module Declarations (
     LTerm(..),
 ) where
 type Stack = [StackElem]
+type Result = [Stack]
 
 
 data StackElem = Zahl Int | Atom String deriving (Show, Eq)
@@ -25,8 +27,8 @@ type PCode = [Command]
 data Env = Env{klauseln :: [Int], goal :: Int, letzte :: Int}
     deriving (Show)
 
-data Command = Push String
-             | Unify String
+data Command = Push StackElem
+             | Unify StackElem
              | Call
              | Return
              | Backtrack

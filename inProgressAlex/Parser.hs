@@ -2,7 +2,7 @@ import Declarations
 import Tokenizer
 import Translator
 
---import MiniL
+import MiniL
 
 
 parse :: [Symbol] -> Programm
