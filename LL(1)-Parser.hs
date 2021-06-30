@@ -1,27 +1,4 @@
-data Symbol = Point
-            | If
-            | And
-            | Not
-            | LBracket
-            | RBracket
-            | Name String
-            | Variable String
-
-data Programm = Programm [PKlausel] Ziel
-
-data PKlausel = PKlausel NVLTerm (Maybe Ziel)
-
-data Ziel = Ziel [Literal]
-
-data Literal = Literal IstNegiert LTerm
-
-type IstNegiert = Bool
-
-data NVLTerm = NVLTerm String [LTerm]
-
-data LTerm = Var String
-           | NVar NVLTerm
-
+import Declarations
 
 
 parse :: [Symbol] -> Programm

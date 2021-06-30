@@ -6,10 +6,8 @@ Symbol(..)
 
 import Data.Char
 
+import Declarations
 
-
---alle möglichen Terminalsymbole
-data Symbol = Variable String | Name String | LBracket | RBracket | Not | If | Point | And deriving (Show)
 
 nextSymbol:: String -> [Symbol]
 nextSymbol "" = []
