@@ -15,6 +15,7 @@ module Declarations (
     IstNegiert,
     NVLTerm(..),
     LTerm(..),
+    Storage(..)
 ) where
 type Stack = [StackElem]
 type Result = [Stack]
@@ -36,7 +37,7 @@ data Command = Push StackElem
                deriving (Show, Eq)
 
 
-data Register = Register{inst:: Int, backQ:: Bool, top:: Int, choice :: Int, ret:: Int, pcounter:: Int} 
+data Register = Register{i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
     deriving (Show)
 
 data Register' = Register' Int Bool Int Int Int Int
@@ -73,3 +74,6 @@ data NVLTerm = NVLTerm String [LTerm]
 
 data LTerm = Var String | NVar NVLTerm 
         deriving (Show, Eq)
+
+
+type Storage = (Stack, PCode, Env, Register, Result)
