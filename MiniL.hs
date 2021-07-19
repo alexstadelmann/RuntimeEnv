@@ -1,4 +1,5 @@
-module MiniL (
+module MiniL
+(
   push,
   unify,
   call,
@@ -6,12 +7,12 @@ module MiniL (
   backtrackQ,
   prompt,
   evaluate,
-  miniL,
-  -- test
-) where
+  miniL
+)
+  where
 
 import Declarations
-import Translator
+import MiniTranslator
 
 
 -- replace Element at a given stack position
@@ -30,21 +31,26 @@ getNumAt s i =
 
 push :: StackElem -> Storage -> Storage
 push a (xs, ys, env, reg, result) =
-  let xs' = xs ++ [Zahl 0, Zahl $ c reg, Zahl ((p reg) + 3), a]
-      reg' = reg {c = (t reg) + 1, r = (t reg) + 2, t = (t reg) + 4, p = (p reg) + 1}
+  let xs' = xs ++ [Zahl 0, Zahl $ c reg, Zahl $ (p reg) + 3, a]
+      reg' = reg {c = (t reg) + 1,
+                  r = (t reg) + 2,
+                  t = (t reg) + 4,
+                  p = (p reg) + 1}
   in (xs', ys, env, reg', result)
 
 
 unify :: StackElem -> Storage -> Storage
 unify a (xs, ys, env, reg, result) =
-  let reg' = reg {b = a /= (xs !! ((c reg) + 3)), p = (p reg) + 1}
+  let reg' = reg {b = a /= xs !! ((c reg) + 3),
+                  p = (p reg) + 1}
   in (xs, ys, env, reg', result)
 
 
 call :: Storage -> Storage
 call (xs, ys, env, reg, result) =
   case getNumAt xs (c reg) of
-       (-1) -> let reg' = reg {b = True, p = (p reg) + 1}
+       (-1) -> let reg' = reg {b = True,
+                               p = (p reg) + 1}
                in (xs, ys, env, reg', result)
        _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
                 reg' = reg {p = getNumAt xs $ c reg}
@@ -56,7 +62,8 @@ returnL (xs, ys, env, reg, result) =
   let a = getNumAt xs $ r reg
       b = getNumAt xs $ (r reg) + 1
   in if a /= -1
-        then let reg' = reg {r = a + 1, p = b}
+        then let reg' = reg {r = a + 1,
+                             p = b}
              in (xs, ys, env, reg', result)
         else let reg'' = reg {p = b}
              in (xs, ys, env, reg'', result)
@@ -71,20 +78,24 @@ backtrackQ (xs, ys, env, reg, result) =
                  (-1, -1) -> let reg' = reg {p = c_last env}
                              in (xs, ys, env, reg', result)
                  (-1, _) -> let a = getNumAt xs $ r reg
-                            in let reg' = reg {c = a, r = a + 1, t = a + 3}
+                            in let reg' = reg {c = a,
+                                               r = a + 1,
+                                               t = a + 3}
                                    xs' = take (a + 4) xs
                                in backtrackQ (xs', ys, env, reg', result)
                  _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
-                          reg' = reg {p = getNumAt xs $ c reg, b = False}
+                          reg' = reg {p = getNumAt xs $ c reg,
+                                      b = False}
                       in (xs', ys, env, reg', result)
 
 
 prompt :: Storage -> Storage
 prompt (xs, ys, env, reg, result) =
   case b reg of
-       True -> let reg' = reg{p = -1}
+       True -> let reg' = reg {p = -1}
                in (xs, ys, env, reg', result)
-       _ -> let reg' = reg{b = True, p = (p reg) - 1}
+       _ -> let reg' = reg {b = True,
+                            p = (p reg) - 1}
                 result' = xs:result
             in (xs, ys, env, reg', result')
 
@@ -97,12 +108,12 @@ evaluate all@(_, ys, _, reg, result) =
 
 
 execute :: Command -> Storage -> Storage
-execute (Push (Atom a)) = push (Atom a)
-execute (Unify (Atom a)) = unify (Atom a)
-execute (Call) = call
-execute (Return) = returnL
-execute (Backtrack) = backtrackQ
-execute (Prompt) = prompt
+execute (Push (Atom a)) = push $ Atom a
+execute (Unify (Atom a)) = unify $ Atom a
+execute Call = call
+execute Return = returnL
+execute Backtrack = backtrackQ
+execute Prompt = prompt
 
 
 miniL :: Programm -> Maybe Result
@@ -111,7 +122,12 @@ miniL x =
       stack = []
       result = []
   in let env = createEnv pcode
-     in let reg = Register{i = 0, b = False, t = -1, c = -1, r = -1, p = c_goal env}
+     in let reg = Register {i = 0,
+                            b = False,
+                            t = -1,
+                            c = -1,
+                            r = -1,
+                            p = c_goal env}
         in evaluate (stack, pcode, env, reg, result)
 
 
@@ -121,5 +137,10 @@ test x =
       stack = []
       result = []
   in let env = createEnv pcode
-     in let reg = Register{i = 0, b = False, t = -1, c = -1, r = -1, p = c_goal env}
+     in let reg = Register{i = 0,
+                           b = False,
+                           t = -1,
+                           c = -1,
+                           r = -1,
+                           p = c_goal env}
         in (stack, pcode, env, reg, result)
