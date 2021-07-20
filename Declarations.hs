@@ -1,7 +1,6 @@
 module Declarations
 (
   Stack,
-  Result,
   StackElem(..),
   LTermElem(..),
   PCode,
@@ -23,15 +22,18 @@ module Declarations
 
 type Stack = [StackElem]
 
-type Result = [Stack]
+data StackElem = Zahl Int
+               | Atom String
+                 deriving (Show, Eq)
 
+data LTermElem = STR String Int
+               | VAR String Int
+                 deriving (Show)
 
-data StackElem = Zahl Int | Atom String deriving (Show, Eq)
-data LTermElem = STR String Int | VAR String Int deriving (Show)
 type PCode = [Command]
 
-data Env = Env{klauseln :: [Int], goal :: Int, letzte :: Int}
-    deriving (Show)
+data Env = Env {klauseln :: [Int], goal :: Int, letzte :: Int}
+  deriving (Show)
 
 data Command = Push StackElem
              | Unify StackElem
@@ -41,11 +43,7 @@ data Command = Push StackElem
              | Prompt
                deriving (Show, Eq)
 
-
-data Register = Register{i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
-    deriving (Show)
-
-data Register' = Register' Int Bool Int Int Int Int
+data Register = Register {i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
     deriving (Show)
 
 
@@ -58,27 +56,26 @@ data Symbol = Variable String
             | If
             | Point
             | And
-            deriving (Show)
+              deriving (Show)
 
 data SyntaxTree = SyntaxTree [PKlausel] Ziel
-        deriving (Show)
+  deriving (Show)
 
 data PKlausel = PKlausel NVLTerm (Maybe Ziel)
-        deriving (Show)
+  deriving (Show)
 
 data Ziel = Ziel [Literal]
-        deriving (Show)
+  deriving (Show)
 
 data Literal = Literal IstNegiert LTerm
-        deriving (Show)
+  deriving (Show)
 
 type IstNegiert = Bool
 
 data NVLTerm = NVLTerm String [LTerm]
-        deriving (Show, Eq)
+  deriving (Show, Eq)
 
 data LTerm = Var String | NVar NVLTerm
-        deriving (Show, Eq)
+  deriving (Show, Eq)
 
-
-type Storage = (Stack, PCode, Env, Register, Result)
+type Storage = (Stack, PCode, Env, Register)
