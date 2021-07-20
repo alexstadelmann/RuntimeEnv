@@ -8,26 +8,31 @@ import Declarations
 import MiniTranslator
 
 
-miniL :: PCode -> Maybe Result
+miniL :: PCode -> Storage
 miniL pcode =
   let stack = []
-      result = []
       env = createEnv pcode
-      reg = Register {i = 0,
-                      b = False,
-                      t = -1,
-                      c = -1,
+      reg = Register {c = -1,
                       r = -1,
-                      p = c_goal env}
-  in evaluate (stack, pcode, env, reg, result)
+                      t = -1,
+                      b = False,
+                      p = c_goal env,
+                      i = 0}
+  in evaluate (stack, pcode, env, reg)
 
 
-evaluate :: Storage -> Maybe Result
-evaluate sto@(_, ys, _, reg, result) =
-  case p reg of
-       -1 -> Just result
-       _ -> evaluate $ (execute $ ys !! (p reg)) sto
+-- evaluate :: Storage -> Storage
+-- evaluate s@(_, pcode, _, reg) =
+--    case p reg of
+--         -1 -> s
+--         _ -> evaluate $ execute (pcode !! (p reg)) s
 
+
+evaluate :: Storage -> Storage
+evaluate s@(_, pcode, _, reg) =
+  case pcode !! (p reg) of
+       Prompt -> s
+       c -> evaluate $ execute c s
 
 execute :: Command -> Storage -> Storage
 execute (Push (Atom a)) = push $ Atom a
@@ -39,74 +44,77 @@ execute Prompt = prompt
 
 
 push :: StackElem -> Storage -> Storage
-push a (xs, ys, env, reg, result) =
+push a (xs, ys, env, reg) =
   let xs' = xs ++ [Zahl 0, Zahl $ c reg, Zahl $ (p reg) + 3, a]
       reg' = reg {c = (t reg) + 1,
                   r = (t reg) + 2,
                   t = (t reg) + 4,
                   p = (p reg) + 1}
-  in (xs', ys, env, reg', result)
+  in (xs', ys, env, reg')
 
 
 unify :: StackElem -> Storage -> Storage
-unify a (xs, ys, env, reg, result) =
+unify a (xs, ys, env, reg) =
   let reg' = reg {b = a /= xs !! ((c reg) + 3),
                   p = (p reg) + 1}
-  in (xs, ys, env, reg', result)
+  in (xs, ys, env, reg')
 
 
 call :: Storage -> Storage
-call (xs, ys, env, reg, result) =
+call (xs, ys, env, reg) =
   case getNumAt xs (c reg) of
        (-1) -> let reg' = reg {b = True,
                                p = (p reg) + 1}
-               in (xs, ys, env, reg', result)
+               in (xs, ys, env, reg')
        _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
                 reg' = reg {p = getNumAt xs $ c reg}
-            in (xs', ys, env, reg', result)
+            in (xs', ys, env, reg')
 
 
 returnL :: Storage -> Storage
-returnL (xs, ys, env, reg, result) =
-  let a = getNumAt xs $ r reg
-      b = getNumAt xs $ (r reg) + 1
-  in if a /= -1
-        then let reg' = reg {r = a + 1,
-                             p = b}
-             in (xs, ys, env, reg', result)
-        else let reg'' = reg {p = b}
-             in (xs, ys, env, reg'', result)
+returnL (xs, ys, env, reg) =
+  let tmp1 = getNumAt xs $ r reg
+      tmp2 = getNumAt xs $ (r reg) + 1
+      reg' = if tmp1 /= -1
+                then reg {r = tmp1 + 1,
+                          p = tmp2}
+                else reg {p = tmp2}
+  in (xs, ys, env, reg')
 
 
 backtrackQ :: Storage -> Storage
-backtrackQ (xs, ys, env, reg, result) =
+backtrackQ (xs, ys, env, reg) =
   case b reg of
        False -> let reg' = reg {p = (p reg) + 1}
-                in (xs, ys, env, reg', result)
+                in (xs, ys, env, reg')
        _ -> case (getNumAt xs $ c reg, getNumAt xs $ r reg) of
                  (-1, -1) -> let reg' = reg {p = c_last env}
-                             in (xs, ys, env, reg', result)
-                 (-1, _) -> let a = getNumAt xs $ r reg
-                                reg' = reg {c = a,
-                                            r = a + 1,
-                                            t = a + 3}
-                                xs' = take (a + 4) xs
-                            in backtrackQ (xs', ys, env, reg', result)
+                             in (xs, ys, env, reg')
+                 (-1, _) -> let tmp = getNumAt xs $ r reg
+                                reg' = reg {c = tmp,
+                                            r = tmp + 1,
+                                            t = tmp + 3}
+                                xs' = take (tmp + 4) xs
+                            in backtrackQ (xs', ys, env, reg')
                  _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
                           reg' = reg {p = getNumAt xs $ c reg,
                                       b = False}
-                      in (xs', ys, env, reg', result)
+                      in (xs', ys, env, reg')
 
 
 prompt :: Storage -> Storage
-prompt (xs, ys, env, reg, result) =
-  case b reg of
-       True -> let reg' = reg {p = -1}
-               in (xs, ys, env, reg', result)
-       _ -> let reg' = reg {b = True,
-                            p = (p reg) - 1}
-                result' = xs:result
-            in (xs, ys, env, reg', result')
+prompt s = s
+
+-- old version of the prompt command
+-- prompt :: Storage -> Storage
+-- prompt (xs, ys, env, reg) =
+--   case b reg of
+--        True -> let reg' = reg {p = -1}
+--                in (xs, ys, env, reg')
+--        _ -> let reg' = reg {b = True,
+--                             p = (p reg) - 1}
+--                 result' = xs:result
+--             in (xs, ys, env, reg')
 
 
 -- replace Element at a given stack position
