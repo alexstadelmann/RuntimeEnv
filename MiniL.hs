@@ -1,12 +1,5 @@
 module MiniL
 (
-  push,
-  unify,
-  call,
-  returnL,
-  backtrackQ,
-  prompt,
-  evaluate,
   miniL
 )
   where
@@ -15,18 +8,34 @@ import Declarations
 import MiniTranslator
 
 
--- replace Element at a given stack position
-replace :: StackElem -> Stack -> Int -> Stack
-replace a xs n
-  | n < 0 || n >= length xs = error "index out of scope"
-  | otherwise = (take n xs) ++ (a : drop (n+1) xs)
+miniL :: PCode -> Maybe Result
+miniL pcode =
+  let stack = []
+      result = []
+      env = createEnv pcode
+      reg = Register {i = 0,
+                      b = False,
+                      t = -1,
+                      c = -1,
+                      r = -1,
+                      p = c_goal env}
+  in evaluate (stack, pcode, env, reg, result)
 
 
-getNumAt :: Stack -> Int -> Int
-getNumAt s i =
-  case s !! i of
-       Zahl a -> a
-       _ -> error "expected a Zahl constructor, but got an Atom constructor"
+evaluate :: Storage -> Maybe Result
+evaluate sto@(_, ys, _, reg, result) =
+  case p reg of
+       -1 -> Just result
+       _ -> evaluate $ (execute $ ys !! (p reg)) sto
+
+
+execute :: Command -> Storage -> Storage
+execute (Push (Atom a)) = push $ Atom a
+execute (Unify (Atom a)) = unify $ Atom a
+execute Call = call
+execute Return = returnL
+execute Backtrack = backtrackQ
+execute Prompt = prompt
 
 
 push :: StackElem -> Storage -> Storage
@@ -78,11 +87,11 @@ backtrackQ (xs, ys, env, reg, result) =
                  (-1, -1) -> let reg' = reg {p = c_last env}
                              in (xs, ys, env, reg', result)
                  (-1, _) -> let a = getNumAt xs $ r reg
-                            in let reg' = reg {c = a,
-                                               r = a + 1,
-                                               t = a + 3}
-                                   xs' = take (a + 4) xs
-                               in backtrackQ (xs', ys, env, reg', result)
+                                reg' = reg {c = a,
+                                            r = a + 1,
+                                            t = a + 3}
+                                xs' = take (a + 4) xs
+                            in backtrackQ (xs', ys, env, reg', result)
                  _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
                           reg' = reg {p = getNumAt xs $ c reg,
                                       b = False}
@@ -100,47 +109,31 @@ prompt (xs, ys, env, reg, result) =
             in (xs, ys, env, reg', result')
 
 
-evaluate :: Storage -> Maybe Result
-evaluate all@(_, ys, _, reg, result) =
-  case p reg of
-       -1 -> Just result
-       _ -> evaluate $ (execute $ ys !! (p reg)) all
+-- replace Element at a given stack position
+replace :: StackElem -> Stack -> Int -> Stack
+replace a xs n
+  | n < 0 || n >= length xs = error "index out of scope"
+  | otherwise = (take n xs) ++ (a : drop (n+1) xs)
 
 
-execute :: Command -> Storage -> Storage
-execute (Push (Atom a)) = push $ Atom a
-execute (Unify (Atom a)) = unify $ Atom a
-execute Call = call
-execute Return = returnL
-execute Backtrack = backtrackQ
-execute Prompt = prompt
+getNumAt :: Stack -> Int -> Int
+getNumAt s i =
+  case s !! i of
+       Zahl a -> a
+       _ -> error "expected a Zahl constructor, but got an Atom constructor"
 
 
-miniL :: Programm -> Maybe Result
-miniL x =
-  let pcode = translate x
-      stack = []
-      result = []
-  in let env = createEnv pcode
-     in let reg = Register {i = 0,
-                            b = False,
-                            t = -1,
-                            c = -1,
-                            r = -1,
-                            p = c_goal env}
-        in evaluate (stack, pcode, env, reg, result)
 
-
-test :: Programm -> Storage
-test x =
-  let pcode = translate x
-      stack = []
-      result = []
-  in let env = createEnv pcode
-     in let reg = Register{i = 0,
-                           b = False,
-                           t = -1,
-                           c = -1,
-                           r = -1,
-                           p = c_goal env}
-        in (stack, pcode, env, reg, result)
+-- test :: SyntaxTree -> Storage
+-- test x =
+--   let pcode = translate x
+--       stack = []
+--       result = []
+--   in let env = createEnv pcode
+--      in let reg = Register{i = 0,
+--                            b = False,
+--                            t = -1,
+--                            c = -1,
+--                            r = -1,
+--                            p = c_goal env}
+--         in (stack, pcode, env, reg, result)

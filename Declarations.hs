@@ -1,23 +1,28 @@
-module Declarations (
-    Stack,
-    Result,
-    StackElem(..),
-    LTermElem(..),
-    PCode,
-    Env(..),
-    Command(..),
-    Register(..),
-    Symbol(..),
-    Programm(..),
-    PKlausel(..),
-    Ziel(..),
-    Literal(..),
-    IstNegiert,
-    NVLTerm(..),
-    LTerm(..),
-    Storage(..)
-) where
+module Declarations
+(
+  Stack,
+  Result,
+  StackElem(..),
+  LTermElem(..),
+  PCode,
+  Env(..),
+  Command(..),
+  Register(..),
+  Symbol(..),
+  SyntaxTree(..),
+  PKlausel(..),
+  Ziel(..),
+  Literal(..),
+  IstNegiert,
+  NVLTerm(..),
+  LTerm(..),
+  Storage(..)
+)
+  where
+
+
 type Stack = [StackElem]
+
 type Result = [Stack]
 
 
@@ -55,7 +60,7 @@ data Symbol = Variable String
             | And
             deriving (Show)
 
-data Programm = Programm [PKlausel] Ziel
+data SyntaxTree = SyntaxTree [PKlausel] Ziel
         deriving (Show)
 
 data PKlausel = PKlausel NVLTerm (Maybe Ziel)

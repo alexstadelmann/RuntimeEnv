@@ -7,19 +7,19 @@ module Parser
 import Declarations
 
 
-parse :: [Symbol] -> Programm
+parse :: [Symbol] -> SyntaxTree
 parse s = case programm s [] of
                ([], p) -> p
                _ -> error "Parsing went wrong."
 
 
-programm :: [Symbol] -> [PKlausel] -> ([Symbol], Programm)
+programm :: [Symbol] -> [PKlausel] -> ([Symbol], SyntaxTree)
 programm s@((Name _):t) pks =
   let erg = pklausel s
   in programm (fst erg) $ (snd erg):pks
 programm s pks =
   let z = ziel s
-  in (fst z, Programm (reverse pks) $ snd z)
+  in (fst z, SyntaxTree (reverse pks) $ snd z)
 
 
 pklausel :: [Symbol] -> ([Symbol], PKlausel)

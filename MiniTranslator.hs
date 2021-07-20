@@ -10,8 +10,8 @@ module MiniTranslator(
 import Declarations
 
 
-translate :: Programm -> PCode
-translate (Programm pks z) =
+translate :: SyntaxTree -> PCode
+translate (SyntaxTree pks z) =
   concatMap translate' pks ++ translateBody (Just z) ++ [Prompt] where
 
   translate' :: PKlausel -> PCode
@@ -73,8 +73,8 @@ c_last = letzte
 
 
 
-testProgramm :: Programm
-testProgramm = Programm [k1, k2, k3] z3
+testSyntaxTree :: SyntaxTree
+testSyntaxTree = SyntaxTree [k1, k2, k3] z3
 
 k1 :: PKlausel
 k1 = PKlausel p' (Just z1)
