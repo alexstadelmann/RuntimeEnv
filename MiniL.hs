@@ -21,7 +21,6 @@ execute (Unify (Atom a)) = unify $ Atom a
 execute Call = call
 execute Return = returnL
 execute Backtrack = backtrackQ
-execute Prompt = prompt
 
 
 push :: StackElem -> Storage -> Storage
