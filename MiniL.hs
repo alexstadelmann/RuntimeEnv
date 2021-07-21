@@ -1,6 +1,6 @@
 module MiniL
 (
-  miniL
+  evaluate
 )
   where
 
@@ -8,31 +8,12 @@ import Declarations
 import MiniTranslator
 
 
-miniL :: PCode -> Storage
-miniL pcode =
-  let stack = []
-      env = createEnv pcode
-      reg = Register {c = -1,
-                      r = -1,
-                      t = -1,
-                      b = False,
-                      p = c_goal env,
-                      i = 0}
-  in evaluate (stack, pcode, env, reg)
-
-
--- evaluate :: Storage -> Storage
--- evaluate s@(_, pcode, _, reg) =
---    case p reg of
---         -1 -> s
---         _ -> evaluate $ execute (pcode !! (p reg)) s
-
-
 evaluate :: Storage -> Storage
 evaluate s@(_, pcode, _, reg) =
   case pcode !! (p reg) of
        Prompt -> s
        c -> evaluate $ execute c s
+
 
 execute :: Command -> Storage -> Storage
 execute (Push (Atom a)) = push $ Atom a
@@ -100,21 +81,6 @@ backtrackQ (xs, ys, env, reg) =
                           reg' = reg {p = getNumAt xs $ c reg,
                                       b = False}
                       in (xs', ys, env, reg')
-
-
-prompt :: Storage -> Storage
-prompt s = s
-
--- old version of the prompt command
--- prompt :: Storage -> Storage
--- prompt (xs, ys, env, reg) =
---   case b reg of
---        True -> let reg' = reg {p = -1}
---                in (xs, ys, env, reg')
---        _ -> let reg' = reg {b = True,
---                             p = (p reg) - 1}
---                 result' = xs:result
---             in (xs, ys, env, reg')
 
 
 -- replace Element at a given stack position
