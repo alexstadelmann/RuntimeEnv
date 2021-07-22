@@ -23,8 +23,8 @@ main = do
                       r = -1,
                       t = -1,
                       b = False,
-                      p = c_goal env,
-                      i = 0}
+                      p = c_goal env}
+  putStrLn $ show pCode
   nextSolution (stack, pCode, env, reg)
 
 

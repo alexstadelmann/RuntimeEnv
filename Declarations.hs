@@ -43,7 +43,7 @@ data Command = Push StackElem
              | Prompt
                deriving (Show, Eq)
 
-data Register = Register {i :: Int, b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
+data Register = Register {b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
     deriving (Show)
 
 
