@@ -1,10 +1,7 @@
 module MiniTranslator(
   translate,
   createEnv,
-  c_first,
-  c_next,
-  c_goal,
-  c_last
+  cNext
 )
   where
 
@@ -47,62 +44,12 @@ createEnv = createEnv' [] 0 0 where
   createEnv' ks z c (_:t) = createEnv' ks z (c + 1) t
 
 
-c_first :: Env -> Int
-c_first env =
-  case klauseln env of
-       [] -> -1
-       _ -> 0
+cNext :: Env -> Int ->  Int
+cNext env = cNext' (clauses env) where
 
-
-c_next :: Env -> Int ->  Int
-c_next env = c_next' (klauseln env) where
-
-  c_next' :: [Int] -> Int -> Int
-  c_next' (h:t) i
-    | h /= i = c_next' t i
+  cNext' :: [Int] -> Int -> Int
+  cNext' (h:t) i
+    | h /= i = cNext' t i
     | otherwise = case t of
                        x:_ -> x
                        _ -> -1
-
-
-c_goal :: Env -> Int
-c_goal = goal
-
-
-c_last :: Env -> Int
-c_last = letzte
-
-
-
--- testSyntaxTree :: SyntaxTree
--- testSyntaxTree = SyntaxTree [k1, k2, k3] z3
--- 
--- k1 :: PKlausel
--- k1 = PKlausel p' (Just z1)
--- 
--- k2 :: PKlausel
--- k2 = PKlausel q' (Just z2)
--- 
--- k3 :: PKlausel
--- k3 = PKlausel r' Nothing
--- 
--- z1 :: Ziel
--- z1 = Ziel [Literal False (NVar q')]
--- 
--- z2 :: Ziel
--- z2 = Ziel [Literal False (NVar r')]
--- 
--- z3 :: Ziel
--- z3 = Ziel [Literal False (NVar p'), Literal False (NVar r')]
--- 
--- z4 :: Ziel
--- z4 = Ziel [Literal False (NVar p')]
--- 
--- p' :: NVLTerm
--- p' = NVLTerm "p" []
--- 
--- q' :: NVLTerm
--- q' = NVLTerm "q" []
--- 
--- r' :: NVLTerm
--- r' = NVLTerm "r" []

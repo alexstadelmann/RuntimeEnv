@@ -46,7 +46,7 @@ call (xs, ys, env, reg) =
        (-1) -> let reg' = reg {b = True,
                                p = (p reg) + 1}
                in (xs, ys, env, reg')
-       _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
+       _ -> let xs' = replace (Zahl $ cNext env $ getNumAt xs $ c reg) xs $ c reg
                 reg' = reg {p = getNumAt xs $ c reg}
             in (xs', ys, env, reg')
 
@@ -68,7 +68,7 @@ backtrackQ (xs, ys, env, reg) =
        False -> let reg' = reg {p = (p reg) + 1}
                 in (xs, ys, env, reg')
        _ -> case (getNumAt xs $ c reg, getNumAt xs $ r reg) of
-                 (-1, -1) -> let reg' = reg {p = c_last env}
+                 (-1, -1) -> let reg' = reg {p = cLast env}
                              in (xs, ys, env, reg')
                  (-1, _) -> let tmp = getNumAt xs $ r reg
                                 reg' = reg {c = tmp,
@@ -76,7 +76,7 @@ backtrackQ (xs, ys, env, reg) =
                                             t = tmp + 3}
                                 xs' = take (tmp + 4) xs
                             in backtrackQ (xs', ys, env, reg')
-                 _ -> let xs' = replace (Zahl $ c_next env $ getNumAt xs $ c reg) xs $ c reg
+                 _ -> let xs' = replace (Zahl $ cNext env $ getNumAt xs $ c reg) xs $ c reg
                           reg' = reg {p = getNumAt xs $ c reg,
                                       b = False}
                       in (xs', ys, env, reg')
@@ -94,19 +94,3 @@ getNumAt s i =
   case s !! i of
        Zahl a -> a
        _ -> error "expected a Zahl constructor, but got an Atom constructor"
-
-
-
--- test :: SyntaxTree -> Storage
--- test x =
---   let pcode = translate x
---       stack = []
---       result = []
---   in let env = createEnv pcode
---      in let reg = Register{i = 0,
---                            b = False,
---                            t = -1,
---                            c = -1,
---                            r = -1,
---                            p = c_goal env}
---         in (stack, pcode, env, reg, result)

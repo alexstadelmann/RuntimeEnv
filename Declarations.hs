@@ -32,7 +32,7 @@ data LTermElem = STR String Int
 
 type PCode = [Command]
 
-data Env = Env {klauseln :: [Int], goal :: Int, letzte :: Int}
+data Env = Env {clauses :: [Int], cGoal :: Int, cLast :: Int}
   deriving (Show)
 
 data Command = Push StackElem
