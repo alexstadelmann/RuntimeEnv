@@ -8,52 +8,59 @@ import Declarations
 
 
 parse :: [Symbol] -> SyntaxTree
-parse s = case programm s [] of
+parse s = case program s [] of
                ([], p) -> p
                _ -> error "Parsing went wrong."
 
 
-programm :: [Symbol] -> [PClause] -> ([Symbol], SyntaxTree)
-programm s@((Name _):t) pks =
-  let erg = pklausel s
-  in programm (fst erg) $ (snd erg):pks
-programm s pks =
-  let z = ziel s
-  in (fst z, SyntaxTree (reverse pks) $ snd z)
+program :: [Symbol] -> [PClause] -> ([Symbol], SyntaxTree)
+program s@((Name _):_) pcs =
+  let result = pclause s
+  in program (fst result) $ (snd result):pcs
+
+program s@(If:_) pcs =
+  let g = goal s
+  in (fst g, SyntaxTree (reverse pcs) $ snd g)
+
+program _ _ = error "Parsing went wrong"
 
 
-pklausel :: [Symbol] -> ([Symbol], PClause)
-pklausel s =
-  let nt = nvlterm s
-  in uncurry pklausel' nt where
+pclause :: [Symbol] -> ([Symbol], PClause)
+pclause s@((Name _):_) =
+  let nvlt = nvlterm s
+  in uncurry pclause' nvlt where
 
-  pklausel' :: [Symbol] -> NVLTerm -> ([Symbol], PClause)
-  pklausel' (Point:t) nt = (t, PClause nt Nothing)
-  pklausel' s nt =
-    let z = ziel s
-    in (fst z, PClause nt $ Just $ snd z)
+  pclause' :: [Symbol] -> NVLTerm -> ([Symbol], PClause)
+  pclause' (Point:t) nvlt = (t, PClause nvlt Nothing)
+  pclause' s@(If:_) nvlt =
+    let g = goal s
+    in (fst g, PClause nvlt $ Just $ snd g)
+  pclause' _ _ = error "Parsing went wrong."
+
+pclause _ = error "Parsing went wrong."
 
 
-ziel :: [Symbol] -> ([Symbol], Goal)
-ziel (If:t) = ziel' t [] where
+goal :: [Symbol] -> ([Symbol], Goal)
+goal (If:t) = goal' t [] where
 
-  ziel' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
-  ziel' s ls =
+  goal' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
+  goal' s ls =
     let l = literal s
-    in ziel'' (fst l) $ (snd l):ls
+    in goal'' (fst l) $ (snd l):ls
 
-  ziel'' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
-  ziel'' (And:t) ls = ziel' t ls
-  ziel'' (Point:t) ls = (t, Goal $ reverse ls)
-  ziel'' _ _ = error "Parsing went wrong."
+  goal'' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
+  goal'' (And:t) ls = goal' t ls
+  goal'' (Point:t) ls = (t, Goal $ reverse ls)
+  goal'' _ _ = error "Parsing went wrong."
 
-ziel _ = error "Parsing went wrong."
+goal _ = error "Parsing went wrong."
 
 
 literal :: [Symbol] -> ([Symbol], Literal)
 literal (Not:t) =
   let lt = lterm t
   in (fst lt, Literal True $ snd lt)
+
 literal s =
   let lt = lterm s
   in (fst lt, Literal False $ snd lt)
@@ -81,6 +88,9 @@ nvlterm _ = error "Parsing went wrong"
 
 lterm :: [Symbol] -> ([Symbol], LTerm)
 lterm ((Variable v):t) = (t, Var v)
-lterm s =
+
+lterm s@((Name _):_) =
   let nt = nvlterm s
   in (fst nt, NVar $ snd nt)
+
+lterm _ = error "Parsing went wrong"
