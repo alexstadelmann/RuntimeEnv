@@ -24,73 +24,74 @@ execute Backtrack = backtrackQ
 
 
 push :: StackElem -> Storage -> Storage
-push a (xs, ys, env, reg) =
-  let xs' = xs ++ [Number 0, Number $ c reg, Number $ (p reg) + 3, a]
+push a (stack, pcode, env, reg) =
+  let stack' = stack ++ [Number 0, Number $ c reg, Number $ (p reg) + 3, a]
       reg' = reg {c = (t reg) + 1,
                   r = (t reg) + 2,
                   t = (t reg) + 4,
                   p = (p reg) + 1}
-  in (xs', ys, env, reg')
+  in (stack', pcode, env, reg')
 
 
 unify :: StackElem -> Storage -> Storage
-unify a (xs, ys, env, reg) =
-  let reg' = reg {b = a /= xs !! ((c reg) + 3),
+unify a (stack, pcode, env, reg) =
+  let reg' = reg {b = a /= stack !! ((c reg) + 3),
                   p = (p reg) + 1}
-  in (xs, ys, env, reg')
+  in (stack, pcode, env, reg')
 
 
 call :: Storage -> Storage
-call (xs, ys, env, reg) =
-  case getNumAt xs (c reg) of
-       (-1) -> let reg' = reg {b = True,
-                               p = (p reg) + 1}
-               in (xs, ys, env, reg')
-       _ -> let xs' = replace (Number $ cNext env $ getNumAt xs $ c reg) xs $ c reg
-                reg' = reg {p = getNumAt xs $ c reg}
-            in (xs', ys, env, reg')
+call (stack, pcode, env, reg)
+  | numAt stack (c reg) == -1 =
+    let reg' = reg {b = True,
+                    p = (p reg) + 1}
+    in (stack, pcode, env, reg')
+  | otherwise =
+    let stack' = replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
+        reg' = reg {p = numAt stack $ c reg}
+    in (stack', pcode, env, reg')
 
 
 returnL :: Storage -> Storage
-returnL (xs, ys, env, reg) =
-  let tmp1 = getNumAt xs $ r reg
-      tmp2 = getNumAt xs $ (r reg) + 1
+returnL (stack, pcode, env, reg) =
+  let tmp1 = numAt stack $ r reg
+      tmp2 = numAt stack $ (r reg) + 1
       reg' = if tmp1 /= -1
                 then reg {r = tmp1 + 1,
                           p = tmp2}
                 else reg {p = tmp2}
-  in (xs, ys, env, reg')
+  in (stack, pcode, env, reg')
 
 
 backtrackQ :: Storage -> Storage
-backtrackQ (xs, ys, env, reg) =
-  case b reg of
-       False -> let reg' = reg {p = (p reg) + 1}
-                in (xs, ys, env, reg')
-       _ -> case (getNumAt xs $ c reg, getNumAt xs $ r reg) of
-                 (-1, -1) -> let reg' = reg {p = cLast env}
-                             in (xs, ys, env, reg')
-                 (-1, _) -> let tmp = getNumAt xs $ r reg
-                                reg' = reg {c = tmp,
-                                            r = tmp + 1,
-                                            t = tmp + 3}
-                                xs' = take (tmp + 4) xs
-                            in backtrackQ (xs', ys, env, reg')
-                 _ -> let xs' = replace (Number $ cNext env $ getNumAt xs $ c reg) xs $ c reg
-                          reg' = reg {p = getNumAt xs $ c reg,
-                                      b = False}
-                      in (xs', ys, env, reg')
+backtrackQ (stack, pcode, env, reg)
+  | b reg = let reg' = reg {p = (p reg) + 1}
+            in (stack, pcode, env, reg')
+  | otherwise =
+    case (numAt stack $ c reg, numAt stack $ r reg) of
+         (-1, -1) -> let reg' = reg {p = cLast env}
+                     in (stack, pcode, env, reg')
+         (-1, _) -> let tmp = numAt stack $ r reg
+                        reg' = reg {c = tmp,
+                                    r = tmp + 1,
+                                    t = tmp + 3}
+                        stack' = take (tmp + 4) stack
+                    in backtrackQ (stack', pcode, env, reg')
+         _ -> let stack' = replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
+                  reg' = reg {p = numAt stack $ c reg,
+                              b = False}
+              in (stack', pcode, env, reg')
 
 
 -- replace Element at a given stack position
 replace :: StackElem -> Stack -> Int -> Stack
-replace a xs n
-  | n < 0 || n >= length xs = error "index out of scope"
-  | otherwise = (take n xs) ++ (a : drop (n+1) xs)
+replace x stack k
+  | k < 0 || k >= length stack = error "index out of range"
+  | otherwise = take k stack ++ x : drop (k + 1) stack
 
 
-getNumAt :: Stack -> Int -> Int
-getNumAt s i =
-  case s !! i of
-       Number a -> a
-       _ -> error "expected a Number constructor, but got an STR constructor"
+numAt :: Stack -> Int -> Int
+numAt stack k =
+  case stack !! k of
+       Number n -> n
+       _ -> error "expected a Number constructor, but got a STR constructor"
