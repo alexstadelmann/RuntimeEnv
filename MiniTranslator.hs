@@ -12,18 +12,18 @@ translate :: SyntaxTree -> PCode
 translate (SyntaxTree pks z) =
   concatMap translate' pks ++ translateBody (Just z) ++ [Prompt] where
 
-  translate' :: PKlausel -> PCode
-  translate' (PKlausel nvlt z) =
+  translate' :: PClause -> PCode
+  translate' (PClause nvlt z) =
     translateHead nvlt ++ translateBody z ++ [Return]
 
 
 translateHead :: NVLTerm -> PCode
-translateHead (NVLTerm s _) = [Unify $ Atom s, Backtrack]
+translateHead (NVLTerm s _) = [Unify $ STR s, Backtrack]
 
 
-translateBody :: Maybe Ziel -> PCode
+translateBody :: Maybe Goal -> PCode
 translateBody Nothing = []
-translateBody (Just (Ziel ls)) = concatMap translateBody' ls where
+translateBody (Just (Goal ls)) = concatMap translateBody' ls where
 
   translateBody' :: Literal -> PCode
   translateBody' (Literal _ lt) =
@@ -31,7 +31,7 @@ translateBody (Just (Ziel ls)) = concatMap translateBody' ls where
          NVar nvlt -> translateBody'' nvlt
 
   translateBody'' :: NVLTerm -> PCode
-  translateBody'' (NVLTerm s _) = [Push $ Atom s, Call, Backtrack]
+  translateBody'' (NVLTerm s _) = [Push $ STR s, Call, Backtrack]
 
 
 createEnv :: PCode -> Env

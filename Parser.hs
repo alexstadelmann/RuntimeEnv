@@ -13,7 +13,7 @@ parse s = case programm s [] of
                _ -> error "Parsing went wrong."
 
 
-programm :: [Symbol] -> [PKlausel] -> ([Symbol], SyntaxTree)
+programm :: [Symbol] -> [PClause] -> ([Symbol], SyntaxTree)
 programm s@((Name _):t) pks =
   let erg = pklausel s
   in programm (fst erg) $ (snd erg):pks
@@ -22,29 +22,29 @@ programm s pks =
   in (fst z, SyntaxTree (reverse pks) $ snd z)
 
 
-pklausel :: [Symbol] -> ([Symbol], PKlausel)
+pklausel :: [Symbol] -> ([Symbol], PClause)
 pklausel s =
   let nt = nvlterm s
   in uncurry pklausel' nt where
 
-  pklausel' :: [Symbol] -> NVLTerm -> ([Symbol], PKlausel)
-  pklausel' (Point:t) nt = (t, PKlausel nt Nothing)
+  pklausel' :: [Symbol] -> NVLTerm -> ([Symbol], PClause)
+  pklausel' (Point:t) nt = (t, PClause nt Nothing)
   pklausel' s nt =
     let z = ziel s
-    in (fst z, PKlausel nt $ Just $ snd z)
+    in (fst z, PClause nt $ Just $ snd z)
 
 
-ziel :: [Symbol] -> ([Symbol], Ziel)
+ziel :: [Symbol] -> ([Symbol], Goal)
 ziel (If:t) = ziel' t [] where
 
-  ziel' :: [Symbol] -> [Literal] -> ([Symbol], Ziel)
+  ziel' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
   ziel' s ls =
     let l = literal s
     in ziel'' (fst l) $ (snd l):ls
 
-  ziel'' :: [Symbol] -> [Literal] -> ([Symbol], Ziel)
+  ziel'' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
   ziel'' (And:t) ls = ziel' t ls
-  ziel'' (Point:t) ls = (t, Ziel $ reverse ls)
+  ziel'' (Point:t) ls = (t, Goal $ reverse ls)
   ziel'' _ _ = error "Parsing went wrong."
 
 ziel _ = error "Parsing went wrong."

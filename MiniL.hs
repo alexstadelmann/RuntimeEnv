@@ -16,8 +16,8 @@ evaluate s@(_, pcode, _, reg) =
 
 
 execute :: Command -> Storage -> Storage
-execute (Push (Atom a)) = push $ Atom a
-execute (Unify (Atom a)) = unify $ Atom a
+execute (Push (STR a)) = push $ STR a
+execute (Unify (STR a)) = unify $ STR a
 execute Call = call
 execute Return = returnL
 execute Backtrack = backtrackQ
@@ -25,7 +25,7 @@ execute Backtrack = backtrackQ
 
 push :: StackElem -> Storage -> Storage
 push a (xs, ys, env, reg) =
-  let xs' = xs ++ [Zahl 0, Zahl $ c reg, Zahl $ (p reg) + 3, a]
+  let xs' = xs ++ [Number 0, Number $ c reg, Number $ (p reg) + 3, a]
       reg' = reg {c = (t reg) + 1,
                   r = (t reg) + 2,
                   t = (t reg) + 4,
@@ -46,7 +46,7 @@ call (xs, ys, env, reg) =
        (-1) -> let reg' = reg {b = True,
                                p = (p reg) + 1}
                in (xs, ys, env, reg')
-       _ -> let xs' = replace (Zahl $ cNext env $ getNumAt xs $ c reg) xs $ c reg
+       _ -> let xs' = replace (Number $ cNext env $ getNumAt xs $ c reg) xs $ c reg
                 reg' = reg {p = getNumAt xs $ c reg}
             in (xs', ys, env, reg')
 
@@ -76,7 +76,7 @@ backtrackQ (xs, ys, env, reg) =
                                             t = tmp + 3}
                                 xs' = take (tmp + 4) xs
                             in backtrackQ (xs', ys, env, reg')
-                 _ -> let xs' = replace (Zahl $ cNext env $ getNumAt xs $ c reg) xs $ c reg
+                 _ -> let xs' = replace (Number $ cNext env $ getNumAt xs $ c reg) xs $ c reg
                           reg' = reg {p = getNumAt xs $ c reg,
                                       b = False}
                       in (xs', ys, env, reg')
@@ -92,5 +92,5 @@ replace a xs n
 getNumAt :: Stack -> Int -> Int
 getNumAt s i =
   case s !! i of
-       Zahl a -> a
-       _ -> error "expected a Zahl constructor, but got an Atom constructor"
+       Number a -> a
+       _ -> error "expected a Number constructor, but got an STR constructor"

@@ -2,17 +2,16 @@ module Declarations
 (
   Stack,
   StackElem(..),
-  LTermElem(..),
   PCode,
   Env(..),
   Command(..),
   Register(..),
   Symbol(..),
   SyntaxTree(..),
-  PKlausel(..),
-  Ziel(..),
+  PClause(..),
+  Goal(..),
   Literal(..),
-  IstNegiert,
+  IsNegated,
   NVLTerm(..),
   LTerm(..),
   Storage(..)
@@ -22,13 +21,9 @@ module Declarations
 
 type Stack = [StackElem]
 
-data StackElem = Zahl Int
-               | Atom String
+data StackElem = Number Int
+               | STR String
                  deriving (Show, Eq)
-
-data LTermElem = STR String Int
-               | VAR String Int
-                 deriving (Show)
 
 type PCode = [Command]
 
@@ -47,7 +42,7 @@ data Register = Register {b :: Bool, t :: Int, c :: Int, r :: Int, p :: Int}
     deriving (Show)
 
 
---Deklarationen (insbesondere) für den Tokenizer und für den Parser
+-- Deklarationen (insbesondere) für den Tokenizer und für den Parser
 data Symbol = Variable String
             | Name String
             | LBracket
@@ -58,19 +53,19 @@ data Symbol = Variable String
             | And
               deriving (Show)
 
-data SyntaxTree = SyntaxTree [PKlausel] Ziel
+data SyntaxTree = SyntaxTree [PClause] Goal
   deriving (Show)
 
-data PKlausel = PKlausel NVLTerm (Maybe Ziel)
+data PClause = PClause NVLTerm (Maybe Goal)
   deriving (Show)
 
-data Ziel = Ziel [Literal]
+data Goal = Goal [Literal]
   deriving (Show)
 
-data Literal = Literal IstNegiert LTerm
+data Literal = Literal IsNegated LTerm
   deriving (Show)
 
-type IstNegiert = Bool
+type IsNegated = Bool
 
 data NVLTerm = NVLTerm String [LTerm]
   deriving (Show, Eq)
