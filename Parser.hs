@@ -22,13 +22,11 @@ program s@(If:_) pcs =
   let g = goal s
   in (fst g, SyntaxTree (reverse pcs) $ snd g)
 
-program _ _ = error "Parsing went wrong"
+program _ _ = error "Parsing went wrong."
 
 
 pclause :: [Symbol] -> ([Symbol], PClause)
-pclause s@((Name _):_) =
-  let nvlt = nvlterm s
-  in uncurry pclause' nvlt where
+pclause s@((Name _):_) = uncurry pclause' $ nvlterm s where
 
   pclause' :: [Symbol] -> NVLTerm -> ([Symbol], PClause)
   pclause' (Point:t) nvlt = (t, PClause nvlt Nothing)
@@ -44,9 +42,10 @@ goal :: [Symbol] -> ([Symbol], Goal)
 goal (If:t) = goal' t [] where
 
   goal' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
-  goal' s ls =
-    let l = literal s
-    in goal'' (fst l) $ (snd l):ls
+  goal' s@(h:_) ls
+    | fstOfLit h = let l = literal s
+                   in goal'' (fst l) $ (snd l):ls
+    | otherwise = error "Parsing went wrong."
 
   goal'' :: [Symbol] -> [Literal] -> ([Symbol], Goal)
   goal'' (And:t) ls = goal' t ls
@@ -61,9 +60,10 @@ literal (Not:t) =
   let lt = lterm t
   in (fst lt, Literal True $ snd lt)
 
-literal s =
-  let lt = lterm s
-  in (fst lt, Literal False $ snd lt)
+literal s@(h:_)
+  | fstOfLTerm h = let lt = lterm s
+                   in (fst lt, Literal False $ snd lt)
+  | otherwise = error "Parsing went wrong."
 
 
 nvlterm :: [Symbol] -> ([Symbol], NVLTerm)
@@ -74,16 +74,17 @@ nvlterm ((Name n):t) = nvlterm' t n where
   nvlterm' s n = (s, NVLTerm n [])
 
   nvlterm'' :: [Symbol] -> String -> [LTerm] -> ([Symbol], NVLTerm)
-  nvlterm'' s n lts =
-    let l = lterm s
-    in nvlterm''' (fst l) n $ (snd l):lts
+  nvlterm'' s@(h:_) n lts
+    | fstOfLTerm h = let l = lterm s
+                     in nvlterm''' (fst l) n $ (snd l):lts
+    | otherwise = error "Parsing went wrong."
 
   nvlterm''' :: [Symbol] -> String -> [LTerm] -> ([Symbol], NVLTerm)
   nvlterm''' (And:t) n lts = nvlterm'' t n lts
   nvlterm''' (RBracket:t) n lts = (t, NVLTerm n $ reverse lts)
-  nvlterm''' _ _ _ = error "Parsing went wrong"
+  nvlterm''' _ _ _ = error "Parsing went wrong."
 
-nvlterm _ = error "Parsing went wrong"
+nvlterm _ = error "Parsing went wrong."
 
 
 lterm :: [Symbol] -> ([Symbol], LTerm)
@@ -93,4 +94,15 @@ lterm s@((Name _):_) =
   let nt = nvlterm s
   in (fst nt, NVar $ snd nt)
 
-lterm _ = error "Parsing went wrong"
+lterm _ = error "Parsing went wrong."
+
+
+fstOfLTerm :: Symbol -> Bool
+fstOfLTerm (Name _) = True
+fstOfLTerm (Variable _) = True
+fstOfLTerm _ = False
+
+
+fstOfLit :: Symbol -> Bool
+fstOfLit Not = True
+fstOfLit s = fstOfLTerm s
