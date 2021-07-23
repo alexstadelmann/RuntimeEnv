@@ -65,9 +65,7 @@ returnL (stack, pcode, env, reg) =
 
 backtrackQ :: Storage -> Storage
 backtrackQ (stack, pcode, env, reg)
-  | b reg = let reg' = reg {p = (p reg) + 1}
-            in (stack, pcode, env, reg')
-  | otherwise =
+  | b reg =
     case (numAt stack $ c reg, numAt stack $ r reg) of
          (-1, -1) -> let reg' = reg {p = cLast env}
                      in (stack, pcode, env, reg')
@@ -81,6 +79,8 @@ backtrackQ (stack, pcode, env, reg)
                   reg' = reg {p = numAt stack $ c reg,
                               b = False}
               in (stack', pcode, env, reg')
+  | otherwise = let reg' = reg {p = (p reg) + 1}
+                in (stack, pcode, env, reg')
 
 
 -- replace Element at a given stack position
