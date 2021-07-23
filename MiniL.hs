@@ -25,10 +25,10 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = stack ++ [Number 0,
-                         Number $ c reg,
-                         Number $ (p reg) + 3,
-                         a]
+  let stack' = a : (Number $ (p reg) + 3)
+                 : (Number $ c reg)
+                 : (Number 0)
+                 : stack
       reg' = reg {c = length stack,
                   r = (length stack) + 1,
                   p = (p reg) + 1}
@@ -37,7 +37,7 @@ push a (stack, pcode, env, reg) =
 
 unify :: StackElem -> Storage -> Storage
 unify a (stack, pcode, env, reg) =
-  let reg' = reg {b = a /= stack !! ((c reg) + 3),
+  let reg' = reg {b = a /= (elemAt stack $ (c reg) + 3),
                   p = (p reg) + 1}
   in (stack, pcode, env, reg')
 
@@ -88,12 +88,18 @@ backtrack stor@(stack, pcode, env, reg)
 replace :: StackElem -> Stack -> Int -> Stack
 replace x stack k
   | k < 0 || k >= length stack = error "index out of range"
-  | otherwise = take k stack ++ x : drop (k + 1) stack
+  | otherwise =
+    let l = length stack
+    in take (l - k - 1) stack ++ x : drop (l - k) stack
+
+
+elemAt :: Stack -> Int -> StackElem
+elemAt stack k = stack !! ((length stack) - k - 1)
 
 
 numAt :: Stack -> Int -> Int
 numAt stack k =
-  case stack !! k of
+  case elemAt stack k of
        Number n -> n
        _ -> error "expected Number, but got STR"
 
