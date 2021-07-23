@@ -25,7 +25,10 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = stack ++ [Number 0, Number $ c reg, Number $ (p reg) + 3, a]
+  let stack' = stack ++ [Number 0,
+                         Number $ c reg,
+                         Number $ (p reg) + 3,
+                         a]
       reg' = reg {c = (t reg) + 1,
                   r = (t reg) + 2,
                   t = (t reg) + 4,
@@ -94,7 +97,7 @@ numAt :: Stack -> Int -> Int
 numAt stack k =
   case stack !! k of
        Number n -> n
-       _ -> error "expected a Number constructor, but got a STR constructor"
+       _ -> error "expected Number, but got STR"
 
 
 setCNext :: Storage -> Stack
