@@ -20,7 +20,7 @@ execute (Push (STR a)) = push $ STR a
 execute (Unify (STR a)) = unify $ STR a
 execute Call = call
 execute Return = returnL
-execute Backtrack = backtrackQ
+execute Backtrack = backtrack
 
 
 push :: StackElem -> Storage -> Storage
@@ -41,13 +41,13 @@ unify a (stack, pcode, env, reg) =
 
 
 call :: Storage -> Storage
-call (stack, pcode, env, reg)
-  | numAt stack (c reg) == -1 =
+call stor@(stack, pcode, env, reg)
+  | numAt stack (c reg) < 0 =
     let reg' = reg {b = True,
                     p = (p reg) + 1}
     in (stack, pcode, env, reg')
   | otherwise =
-    let stack' = replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
+    let stack' = setCNext stor
         reg' = reg {p = numAt stack $ c reg}
     in (stack', pcode, env, reg')
 
@@ -63,8 +63,8 @@ returnL (stack, pcode, env, reg) =
   in (stack, pcode, env, reg')
 
 
-backtrackQ :: Storage -> Storage
-backtrackQ (stack, pcode, env, reg)
+backtrack :: Storage -> Storage
+backtrack stor@(stack, pcode, env, reg)
   | b reg =
     case (numAt stack $ c reg, numAt stack $ r reg) of
          (-1, -1) -> let reg' = reg {p = cLast env}
@@ -74,8 +74,8 @@ backtrackQ (stack, pcode, env, reg)
                                     r = tmp + 1,
                                     t = tmp + 3}
                         stack' = take (tmp + 4) stack
-                    in backtrackQ (stack', pcode, env, reg')
-         _ -> let stack' = replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
+                    in backtrack (stack', pcode, env, reg')
+         _ -> let stack' = setCNext stor
                   reg' = reg {p = numAt stack $ c reg,
                               b = False}
               in (stack', pcode, env, reg')
@@ -95,3 +95,8 @@ numAt stack k =
   case stack !! k of
        Number n -> n
        _ -> error "expected a Number constructor, but got a STR constructor"
+
+
+setCNext :: Storage -> Stack
+setCNext (stack, _, env, reg) =
+  replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
