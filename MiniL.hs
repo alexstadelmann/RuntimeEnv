@@ -29,9 +29,8 @@ push a (stack, pcode, env, reg) =
                          Number $ c reg,
                          Number $ (p reg) + 3,
                          a]
-      reg' = reg {c = (t reg) + 1,
-                  r = (t reg) + 2,
-                  t = (t reg) + 4,
+      reg' = reg {c = length stack,
+                  r = (length stack) + 1,
                   p = (p reg) + 1}
   in (stack', pcode, env, reg')
 
@@ -74,8 +73,7 @@ backtrack stor@(stack, pcode, env, reg)
                      in (stack, pcode, env, reg')
          (-1, _) -> let tmp = numAt stack $ r reg
                         reg' = reg {c = tmp,
-                                    r = tmp + 1,
-                                    t = tmp + 3}
+                                    r = tmp + 1}
                         stack' = take (tmp + 4) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
@@ -86,7 +84,7 @@ backtrack stor@(stack, pcode, env, reg)
                 in (stack, pcode, env, reg')
 
 
--- replace Element at a given stack position
+-- replace element at a given stack position
 replace :: StackElem -> Stack -> Int -> Stack
 replace x stack k
   | k < 0 || k >= length stack = error "index out of range"

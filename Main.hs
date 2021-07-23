@@ -21,7 +21,6 @@ main = do
       env = createEnv pCode
       reg = Register {c = -1,
                       r = -1,
-                      t = -1,
                       b = False,
                       p = cGoal env}
   putStrLn $ show pCode
