@@ -71,10 +71,10 @@ backtrack stor@(stack, pcode, env, reg)
     case (numAt stack $ c reg, numAt stack $ r reg) of
          (-1, -1) -> let reg' = reg {p = cLast env}
                      in (stack, pcode, env, reg')
-         (-1, _) -> let tmp = numAt stack $ r reg
-                        reg' = reg {c = tmp,
-                                    r = tmp + 1}
-                        stack' = take (tmp + 4) stack
+         (-1, _) -> let newC = numAt stack $ r reg
+                        reg' = reg {c = newC,
+                                    r = newC + 1}
+                        stack' = drop ((length stack) - newC - 3) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
                   reg' = reg {p = numAt stack $ c reg,
