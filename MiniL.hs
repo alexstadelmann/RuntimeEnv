@@ -37,7 +37,7 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = a : (RET (p reg + 3) $ -1)
+  let stack' = a : (RET (p reg + 2) $ -1)
                  : (NUM $ c reg)
                  : (NUM 0)
                  : stack

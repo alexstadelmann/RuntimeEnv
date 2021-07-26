@@ -10,7 +10,7 @@ import Declarations
 
 translate :: SyntaxTree -> PCode
 translate (SyntaxTree pks z) =
-  concatMap translate' pks ++ translateBody (Just z) ++ [Prompt] where
+  concatMap translate' pks ++ translateBody (Just z) ++ [Backtrack, Prompt] where
 
   translate' :: PClause -> PCode
   translate' (PClause nvlt z) =
@@ -31,7 +31,7 @@ translateBody (Just (Goal ls)) = concatMap translateBody' ls where
          NVar nvlt -> translateBody'' nvlt
 
   translateBody'' :: NVLTerm -> PCode
-  translateBody'' (NVLTerm s _) = [Push $ STR s, Call, Backtrack]
+  translateBody'' (NVLTerm s _) = [Push $ STR s, Call]
 
 
 createEnv :: PCode -> Env
