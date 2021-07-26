@@ -16,28 +16,28 @@ main = do
   inputProgram <- readFile inputFilePath
   let tokens = tokenize inputProgram
       syntaxTree = parse tokens
-      pCode = translate syntaxTree
+      pcode = translate syntaxTree
       stack = []
-      env = createEnv pCode
+      env = createEnv pcode
       reg = Register {c = -1,
                       r = -1,
                       b = False,
                       p = cGoal env}
---   putStrLn $ show pCode
+--   putStrLn $ show pcode
 --   putStrLn $ show env
 --   putStrLn $ show reg
-  nextSolution (stack, pCode, env, reg)
+  nextSolution (stack, pcode, env, reg)
 
 
 nextSolution :: Storage -> IO ()
 nextSolution s = do
   let result = evaluate s
-      (stack, pCode, env, reg) = result
+      (stack, pcode, env, reg) = result
   if b reg
      then putStrLn "No (more) solutions"
      else do putStrLn $ show $ solution stack
 --              putStrLn $ show stack
---              putStrLn $ show pCode
+--              putStrLn $ show pcode
 --              putStrLn $ show env
 --              putStrLn $ show reg
              wantMore result
@@ -61,8 +61,8 @@ wantMore s@(stack, pcode, env, reg) = do
        "N" -> putStrLn "Good Bye!"
        "Y" -> let stack' = delNewRets stack
                   reg' = reg {b = True,
-                              p = (p reg) - 1,
-                              r = (c reg) + 1}
+                              p = p reg - 1,
+                              r = c reg + 1}
               in nextSolution (stack', pcode, env, reg')
        _ -> do putStrLn "Not a valid input"
                wantMore s

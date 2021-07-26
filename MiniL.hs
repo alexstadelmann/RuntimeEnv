@@ -37,20 +37,20 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = a : (RET ((p reg) + 3) $ -1)
+  let stack' = a : (RET (p reg + 3) $ -1)
                  : (NUM $ c reg)
                  : (NUM 0)
                  : stack
       reg' = reg {c = length stack,
-                  r = (length stack) + 1,
-                  p = (p reg) + 1}
+                  r = length stack + 1,
+                  p = p reg + 1}
   in (stack', pcode, env, reg')
 
 
 unify :: StackElem -> Storage -> Storage
 unify a (stack, pcode, env, reg) =
-  let reg' = reg {b = a /= (elemAt stack $ (c reg) + 3),
-                  p = (p reg) + 1}
+  let reg' = reg {b = a /= (elemAt stack $ c reg + 3),
+                  p = p reg + 1}
   in (stack, pcode, env, reg')
 
 
@@ -58,7 +58,7 @@ call :: Storage -> Storage
 call stor@(stack, pcode, env, reg)
   | numAt stack (c reg) < 0 =
     let reg' = reg {b = True,
-                    p = (p reg) + 1}
+                    p = p reg + 1}
     in (stack, pcode, env, reg')
   | otherwise =
     let stack' = setCNext stor
@@ -69,14 +69,14 @@ call stor@(stack, pcode, env, reg)
 returnL :: Storage -> Storage
 returnL (stack, pcode, env, reg) =
   let lastCHP = numAt stack $ r reg
-      (rOld, rNew) = retAt stack $ (r reg) + 1
+      (rOld, rNew) = retAt stack $ r reg + 1
       retAdd = if rNew < 0 then rOld else rNew
       reg' = reg {p = retAdd}
       reg'' = if lastCHP >= 0
                  then reg' {r = lastCHP + 1}
                  else reg'
       stack' = if lastCHP >= 0
-                  then replace retAdd' stack $ (r reg) + 1
+                  then replace retAdd' stack $ r reg + 1
                   else stack
       retAdd' = newRetAdd pcode rOld rNew
   in (stack', pcode, env, reg'') where
@@ -97,13 +97,13 @@ backtrack stor@(stack, pcode, env, reg)
          (-1, _) -> let newC = numAt stack $ r reg
                         reg' = reg {c = newC,
                                     r = newC + 1}
-                        stack' = drop ((length stack) - newC - 4) stack
+                        stack' = drop (length stack - newC - 4) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
                   reg' = reg {p = numAt stack $ c reg,
                               b = False}
               in (stack', pcode, env, reg')
-  | otherwise = let reg' = reg {p = (p reg) + 1}
+  | otherwise = let reg' = reg {p = p reg + 1}
                 in (stack, pcode, env, reg')
 
 
@@ -117,7 +117,7 @@ replace x stack k
 
 
 elemAt :: Stack -> Int -> StackElem
-elemAt stack k = stack !! ((length stack) - k - 1)
+elemAt stack k = stack !! (length stack - k - 1)
 
 
 numAt :: Stack -> Int -> Int
