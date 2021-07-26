@@ -48,8 +48,7 @@ cNext :: Env -> Int ->  Int
 cNext env = cNext' (clauses env) where
 
   cNext' :: [Int] -> Int -> Int
+  cNext' [] _ = -1
   cNext' (h:t) i
-    | h /= i = cNext' t i
-    | otherwise = case t of
-                       x:_ -> x
-                       _ -> -1
+    | h <= i = cNext' t i
+    | otherwise = h

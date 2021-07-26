@@ -6,13 +6,25 @@ module MiniL
 
 import Declarations
 import MiniTranslator
+-- import Debug.Trace
 
 
 evaluate :: Storage -> Storage
-evaluate s@(_, pcode, _, reg) =
+evaluate stor@(_, pcode, _, reg) =
   case pcode !! (p reg) of
-       Prompt -> s
-       c -> evaluate $ execute c s
+       Prompt -> stor
+       command -> evaluate $ execute command stor
+
+
+-- use this version of evaluate for debugging:
+
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(stack, pcode, _, reg)
+--   | trace ((show stack) ++ "   " ++ (show reg) ++ "\n") False = undefined
+--   | otherwise =
+--     case pcode !! (p reg) of
+--          Prompt -> stor
+--          command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
@@ -25,9 +37,9 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = a : (Number $ (p reg) + 3)
-                 : (Number $ c reg)
-                 : (Number 0)
+  let stack' = a : (NUM $ (p reg) + 3)
+                 : (NUM $ c reg)
+                 : (NUM 0)
                  : stack
       reg' = reg {c = length stack,
                   r = (length stack) + 1,
@@ -56,13 +68,22 @@ call stor@(stack, pcode, env, reg)
 
 returnL :: Storage -> Storage
 returnL (stack, pcode, env, reg) =
-  let tmp1 = numAt stack $ r reg
-      tmp2 = numAt stack $ (r reg) + 1
-      reg' = if tmp1 /= -1
-                then reg {r = tmp1 + 1,
-                          p = tmp2}
-                else reg {p = tmp2}
-  in (stack, pcode, env, reg')
+  let lastCHP = numAt stack $ r reg
+      retAdd = numAt stack $ (r reg) + 1
+      reg' = reg {p = retAdd}
+      reg'' = if lastCHP >= 0
+                 then reg' {r = lastCHP + 1}
+                 else reg'
+      stack' = if lastCHP >= 0
+                  then replace retAdd' stack $ (r reg) + 1
+                  else stack
+      retAdd' = NUM $ newRetAdd pcode retAdd
+  in (stack', pcode, env, reg'') where
+    
+    newRetAdd :: PCode -> Int -> Int
+    newRetAdd pcode i
+      | pcode !! i == Return = i
+      | otherwise = newRetAdd pcode $ i + 1
 
 
 backtrack :: Storage -> Storage
@@ -74,7 +95,7 @@ backtrack stor@(stack, pcode, env, reg)
          (-1, _) -> let newC = numAt stack $ r reg
                         reg' = reg {c = newC,
                                     r = newC + 1}
-                        stack' = drop ((length stack) - newC - 3) stack
+                        stack' = drop ((length stack) - newC - 4) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
                   reg' = reg {p = numAt stack $ c reg,
@@ -100,10 +121,10 @@ elemAt stack k = stack !! ((length stack) - k - 1)
 numAt :: Stack -> Int -> Int
 numAt stack k =
   case elemAt stack k of
-       Number n -> n
-       _ -> error "expected Number, but got STR"
+       NUM n -> n
+       _ -> error "expected NUM, but got STR"
 
 
 setCNext :: Storage -> Stack
 setCNext (stack, _, env, reg) =
-  replace (Number $ cNext env $ numAt stack $ c reg) stack $ c reg
+  replace (NUM $ cNext env $ numAt stack $ c reg) stack $ c reg

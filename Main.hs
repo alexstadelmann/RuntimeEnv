@@ -23,7 +23,9 @@ main = do
                       r = -1,
                       b = False,
                       p = cGoal env}
-  putStrLn $ show pCode
+--   putStrLn $ show pCode
+--   putStrLn $ show env
+--   putStrLn $ show reg
   nextSolution (stack, pCode, env, reg)
 
 

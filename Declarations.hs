@@ -21,9 +21,13 @@ module Declarations
 
 type Stack = [StackElem]
 
-data StackElem = Number Int
+data StackElem = NUM Int
                | STR String
-                 deriving (Show, Eq)
+                 deriving (Eq)
+
+instance Show StackElem where
+  show (NUM x) = "NUM " ++ (show x)
+  show (STR x) = "STR " ++ x
 
 type PCode = [Command]
 
