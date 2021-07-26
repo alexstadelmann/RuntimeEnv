@@ -22,12 +22,9 @@ module Declarations
 type Stack = [StackElem]
 
 data StackElem = NUM Int
+               | RET Int Int -- ReturnAddress Old New
                | STR String
-                 deriving (Eq)
-
-instance Show StackElem where
-  show (NUM x) = "NUM " ++ (show x)
-  show (STR x) = "STR " ++ x
+                 deriving (Show, Eq)
 
 type PCode = [Command]
 

@@ -36,9 +36,9 @@ nextSolution s = do
   if b reg
      then putStrLn "No (more) solutions"
      else do putStrLn $ show stack
-             putStrLn $ show pCode
-             putStrLn $ show env
-             putStrLn $ show reg
+--              putStrLn $ show pCode
+--              putStrLn $ show env
+--              putStrLn $ show reg
              wantMore result
 
 
@@ -49,8 +49,19 @@ wantMore s@(stack, pcode, env, reg) = do
   more <- getLine
   case more of
        "N" -> putStrLn "Good Bye!"
-       "Y" -> let reg' = reg {b = True,
-                              p = (p reg) - 1}
-              in nextSolution (stack, pcode, env, reg')
+       "Y" -> let stack' = delNewRets stack
+                  reg' = reg {b = True,
+                              p = (p reg) - 1,
+                              r = (c reg) + 1}
+              in nextSolution (stack', pcode, env, reg')
        _ -> do putStrLn "Not a valid input"
                wantMore s
+
+
+delNewRets :: Stack -> Stack
+delNewRets s = delNewRets' s [] where
+  
+  delNewRets' :: Stack -> Stack -> Stack
+  delNewRets' [] acc = reverse acc
+  delNewRets' ((RET o n):t) acc = delNewRets' t $ (RET o $ -1):acc
+  delNewRets' (h:t) acc = delNewRets' t $ h:acc

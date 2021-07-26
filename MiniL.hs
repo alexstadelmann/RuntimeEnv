@@ -37,7 +37,7 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = a : (NUM $ (p reg) + 3)
+  let stack' = a : (RET ((p reg) + 3) $ -1)
                  : (NUM $ c reg)
                  : (NUM 0)
                  : stack
@@ -69,7 +69,8 @@ call stor@(stack, pcode, env, reg)
 returnL :: Storage -> Storage
 returnL (stack, pcode, env, reg) =
   let lastCHP = numAt stack $ r reg
-      retAdd = numAt stack $ (r reg) + 1
+      (rOld, rNew) = retAt stack $ (r reg) + 1
+      retAdd = if rNew < 0 then rOld else rNew
       reg' = reg {p = retAdd}
       reg'' = if lastCHP >= 0
                  then reg' {r = lastCHP + 1}
@@ -77,13 +78,14 @@ returnL (stack, pcode, env, reg) =
       stack' = if lastCHP >= 0
                   then replace retAdd' stack $ (r reg) + 1
                   else stack
-      retAdd' = NUM $ newRetAdd pcode retAdd
+      retAdd' = newRetAdd pcode rOld rNew
   in (stack', pcode, env, reg'') where
     
-    newRetAdd :: PCode -> Int -> Int
-    newRetAdd pcode i
-      | pcode !! i == Return = i
-      | otherwise = newRetAdd pcode $ i + 1
+    newRetAdd :: PCode -> Int -> Int -> StackElem
+    newRetAdd pcode i j
+      | j < 0 = newRetAdd pcode i i
+      | pcode !! j == Return = RET i j
+      | otherwise = newRetAdd pcode i $ j + 1
 
 
 backtrack :: Storage -> Storage
@@ -119,10 +121,17 @@ elemAt stack k = stack !! ((length stack) - k - 1)
 
 
 numAt :: Stack -> Int -> Int
-numAt stack k =
-  case elemAt stack k of
+numAt stack i =
+  case elemAt stack i of
        NUM n -> n
-       _ -> error "expected NUM, but got STR"
+       _ -> error "expected NUM constructor"
+
+
+retAt :: Stack -> Int -> (Int, Int)
+retAt stack i =
+  case elemAt stack i of
+       RET old new -> (old, new)
+       _ -> error "expected RET constructor"
 
 
 setCNext :: Storage -> Stack
