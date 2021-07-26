@@ -35,11 +35,21 @@ nextSolution s = do
       (stack, pCode, env, reg) = result
   if b reg
      then putStrLn "No (more) solutions"
-     else do putStrLn $ show stack
+     else do putStrLn $ show $ solution stack
+--              putStrLn $ show stack
 --              putStrLn $ show pCode
 --              putStrLn $ show env
 --              putStrLn $ show reg
              wantMore result
+
+
+solution :: Stack -> [String]
+solution = solution' [] where
+  
+  solution' :: [String] -> Stack -> [String]
+  solution' acc [] = acc
+  solution' acc ((STR s):t) = solution' (s:acc) t
+  solution' acc (_:t) = solution' acc t
 
 
 wantMore :: Storage -> IO ()
@@ -59,9 +69,9 @@ wantMore s@(stack, pcode, env, reg) = do
 
 
 delNewRets :: Stack -> Stack
-delNewRets s = delNewRets' s [] where
+delNewRets = delNewRets' [] where
   
   delNewRets' :: Stack -> Stack -> Stack
-  delNewRets' [] acc = reverse acc
-  delNewRets' ((RET o n):t) acc = delNewRets' t $ (RET o $ -1):acc
-  delNewRets' (h:t) acc = delNewRets' t $ h:acc
+  delNewRets' acc [] = reverse acc
+  delNewRets' acc ((RET x _):t) = delNewRets' ((RET x $ -1):acc) t
+  delNewRets' acc (h:t) = delNewRets' (h:acc) t
