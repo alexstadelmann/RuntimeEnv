@@ -71,7 +71,7 @@ call stor@(stack, pcode, env, reg)
 
 returnL :: Storage -> Storage
 returnL (stack, pcode, env, reg)
-  | numAt stack (r reg + 2) /= (l reg - 1) =
+  | numAt stack (r reg + 2) /= l reg - 1 =
     let reg' = reg {r = numAt stack (r reg) + 1}
     in returnL (stack, pcode, env, reg')
   | otherwise =
