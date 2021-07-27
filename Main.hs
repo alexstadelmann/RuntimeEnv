@@ -22,10 +22,8 @@ main = do
       reg = Register {c = -1,
                       r = -1,
                       b = False,
-                      p = cGoal env}
---   putStrLn $ show pcode
---   putStrLn $ show env
---   putStrLn $ show reg
+                      p = cGoal env,
+                      l = 0}
   nextSolution (stack, pcode, env, reg)
 
 
@@ -35,21 +33,25 @@ nextSolution s = do
       (stack, pcode, env, reg) = result
   if b reg
      then putStrLn "No (more) solutions"
-     else do putStrLn $ show $ solution stack
---              putStrLn $ show stack
---              putStrLn $ show pcode
---              putStrLn $ show env
---              putStrLn $ show reg
+     else do putStrLn $ showSolution stack
              wantMore result
 
 
-solution :: Stack -> [String]
-solution = solution' [] where
+showSolution :: Stack -> String
+showSolution = showSolution' "" where
   
-  solution' :: [String] -> Stack -> [String]
-  solution' acc [] = acc
-  solution' acc ((STR s):t) = solution' (s:acc) t
-  solution' acc (_:t) = solution' acc t
+  showSolution' :: String -> Stack -> String
+  showSolution' acc [] = acc
+  showSolution' acc ((STR s):t) = showSolution' (spaces t ++ s ++ ('\n':acc)) t
+  showSolution' acc (_:t) = showSolution' acc t
+  
+  spaces :: Stack -> String
+  spaces ((NUM n):t) = spaces' "" n
+  
+  spaces' :: String -> Int -> String
+  spaces' acc i
+    | i <= 0 = acc
+    | otherwise = spaces' (' ':' ':acc) $ i - 1
 
 
 wantMore :: Storage -> IO ()
@@ -59,19 +61,10 @@ wantMore s@(stack, pcode, env, reg) = do
   more <- getLine
   case more of
        "N" -> putStrLn "Good Bye!"
-       "Y" -> let stack' = delNewRets stack
-                  reg' = reg {b = True,
+       "Y" -> let reg' = reg {b = True,
                               p = p reg - 1,
-                              r = c reg + 1}
-              in nextSolution (stack', pcode, env, reg')
+                              r = c reg + 1,
+                              l = numAt stack $ c reg + 3}
+              in nextSolution (stack, pcode, env, reg')
        _ -> do putStrLn "Not a valid input"
                wantMore s
-
-
-delNewRets :: Stack -> Stack
-delNewRets = delNewRets' [] where
-  
-  delNewRets' :: Stack -> Stack -> Stack
-  delNewRets' acc [] = reverse acc
-  delNewRets' acc ((RET x _):t) = delNewRets' ((RET x $ -1):acc) t
-  delNewRets' acc (h:t) = delNewRets' (h:acc) t

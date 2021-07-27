@@ -1,6 +1,7 @@
 module MiniL
 (
-  evaluate
+  evaluate,
+  numAt
 )
   where
 
@@ -16,11 +17,11 @@ evaluate stor@(_, pcode, _, reg) =
        command -> evaluate $ execute command stor
 
 
--- use this version of evaluate for debugging:
+-- use this version of evaluate for debugging purposes:
 
 -- evaluate :: Storage -> Storage
 -- evaluate stor@(stack, pcode, _, reg)
---   | trace ((show stack) ++ "   " ++ (show reg) ++ "\n") False = undefined
+--   | trace ((show stack) ++ "   " ++ (show reg) ++ "   " ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
 --   | otherwise =
 --     case pcode !! (p reg) of
 --          Prompt -> stor
@@ -37,7 +38,8 @@ execute Backtrack = backtrack
 
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
-  let stack' = a : (RET (p reg + 2) $ -1)
+  let stack' = a : (NUM $ l reg)
+                 : (NUM $ p reg + 2)
                  : (NUM $ c reg)
                  : (NUM 0)
                  : stack
@@ -49,7 +51,7 @@ push a (stack, pcode, env, reg) =
 
 unify :: StackElem -> Storage -> Storage
 unify a (stack, pcode, env, reg) =
-  let reg' = reg {b = a /= (elemAt stack $ c reg + 3),
+  let reg' = reg {b = a /= (elemAt stack $ c reg + 4),
                   p = p reg + 1}
   in (stack, pcode, env, reg')
 
@@ -62,30 +64,20 @@ call stor@(stack, pcode, env, reg)
     in (stack, pcode, env, reg')
   | otherwise =
     let stack' = setCNext stor
-        reg' = reg {p = numAt stack $ c reg}
+        reg' = reg {p = numAt stack $ c reg,
+                    l = l reg + 1}
     in (stack', pcode, env, reg')
 
 
 returnL :: Storage -> Storage
-returnL (stack, pcode, env, reg) =
-  let lastCHP = numAt stack $ r reg
-      (rOld, rNew) = retAt stack $ r reg + 1
-      retAdd = if rNew < 0 then rOld else rNew
-      reg' = reg {p = retAdd}
-      reg'' = if lastCHP >= 0
-                 then reg' {r = lastCHP + 1}
-                 else reg'
-      stack' = if lastCHP >= 0
-                  then replace retAdd' stack $ r reg + 1
-                  else stack
-      retAdd' = newRetAdd pcode rOld rNew
-  in (stack', pcode, env, reg'') where
-    
-    newRetAdd :: PCode -> Int -> Int -> StackElem
-    newRetAdd pcode i j
-      | j < 0 = newRetAdd pcode i i
-      | pcode !! j == Return = RET i j
-      | otherwise = newRetAdd pcode i $ j + 1
+returnL (stack, pcode, env, reg)
+  | numAt stack (r reg + 2) /= (l reg - 1) =
+    let reg' = reg {r = numAt stack (r reg) + 1}
+    in returnL (stack, pcode, env, reg')
+  | otherwise =
+    let reg' = reg {p = numAt stack $ r reg + 1,
+                    l = l reg - 1}
+    in (stack, pcode, env, reg')
 
 
 backtrack :: Storage -> Storage
@@ -96,8 +88,9 @@ backtrack stor@(stack, pcode, env, reg)
                      in (stack, pcode, env, reg')
          (-1, _) -> let newC = numAt stack $ r reg
                         reg' = reg {c = newC,
-                                    r = newC + 1}
-                        stack' = drop (length stack - newC - 4) stack
+                                    r = newC + 1,
+                                    l = numAt stack $ c reg + 3}
+                        stack' = drop (length stack - newC - 5) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
                   reg' = reg {p = numAt stack $ c reg,
@@ -109,29 +102,22 @@ backtrack stor@(stack, pcode, env, reg)
 
 -- replace element at a given stack position
 replace :: StackElem -> Stack -> Int -> Stack
-replace x stack k
-  | k < 0 || k >= length stack = error "index out of range"
+replace x stack i
+  | i < 0 || i >= length stack = error "index out of range"
   | otherwise =
-    let l = length stack
-    in take (l - k - 1) stack ++ x : drop (l - k) stack
+    let len = length stack
+    in take (len - i - 1) stack ++ x : drop (len - i) stack
 
 
 elemAt :: Stack -> Int -> StackElem
-elemAt stack k = stack !! (length stack - k - 1)
+elemAt stack i = stack !! (length stack - i - 1)
 
 
 numAt :: Stack -> Int -> Int
 numAt stack i =
   case elemAt stack i of
        NUM n -> n
-       _ -> error "expected NUM constructor"
-
-
-retAt :: Stack -> Int -> (Int, Int)
-retAt stack i =
-  case elemAt stack i of
-       RET old new -> (old, new)
-       _ -> error "expected RET constructor"
+       _ -> error "expected NUM or RET constructor"
 
 
 setCNext :: Storage -> Stack

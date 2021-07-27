@@ -22,7 +22,6 @@ module Declarations
 type Stack = [StackElem]
 
 data StackElem = NUM Int
-               | RET Int Int -- ReturnAddress Old New
                | STR String
                  deriving (Show, Eq)
 
@@ -39,7 +38,12 @@ data Command = Push StackElem
              | Prompt
                deriving (Show, Eq)
 
-data Register = Register {b :: Bool, c :: Int, r :: Int, p :: Int}
+-- l: level of current CHP in the proof tree
+data Register = Register {b :: Bool,
+                          c :: Int,
+                          r :: Int,
+                          p :: Int,
+                          l :: Int}
     deriving (Show)
 
 
