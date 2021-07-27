@@ -117,7 +117,7 @@ numAt :: Stack -> Int -> Int
 numAt stack i =
   case elemAt stack i of
        NUM n -> n
-       _ -> error "expected NUM or RET constructor"
+       _ -> error "expected NUM constructor"
 
 
 setCNext :: Storage -> Stack
