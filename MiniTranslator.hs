@@ -1,7 +1,8 @@
 module MiniTranslator(
   translate,
   createEnv,
-  cNext
+  cNext,
+  cFirst
 )
   where
 
@@ -44,7 +45,7 @@ createEnv = createEnv' [] 0 0 where
   createEnv' ks z c (_:t) = createEnv' ks z (c + 1) t
 
 
-cNext :: Env -> Int ->  Int
+cNext :: Env -> Int -> Int
 cNext env = cNext' (clauses env) where
 
   cNext' :: [Int] -> Int -> Int
@@ -52,3 +53,8 @@ cNext env = cNext' (clauses env) where
   cNext' (h:t) i
     | h <= i = cNext' t i
     | otherwise = h
+
+
+cFirst :: Env -> Int
+cFirst Env {clauses = []} = -1
+cFirst _ = 0

@@ -7,7 +7,7 @@ module MiniL
 
 import Declarations
 import MiniTranslator
--- import Debug.Trace
+import Debug.Trace
 
 
 evaluate :: Storage -> Storage
@@ -21,7 +21,8 @@ evaluate stor@(_, pcode, _, reg) =
 
 -- evaluate :: Storage -> Storage
 -- evaluate stor@(stack, pcode, _, reg)
---   | trace ((show stack) ++ "   " ++ (show reg) ++ "   " ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
+--   | trace ((show stack) ++ "   " ++ (show reg) ++ "   "
+--     ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
 --   | otherwise =
 --     case pcode !! (p reg) of
 --          Prompt -> stor
@@ -41,7 +42,7 @@ push a (stack, pcode, env, reg) =
   let stack' = a : (NUM $ l reg)
                  : (NUM $ p reg + 2)
                  : (NUM $ c reg)
-                 : (NUM 0)
+                 : (NUM $ cFirst env)
                  : stack
       reg' = reg {c = length stack,
                   r = length stack + 1,
