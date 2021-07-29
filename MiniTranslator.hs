@@ -10,39 +10,43 @@ import Declarations
 
 
 translate :: SyntaxTree -> PCode
-translate (SyntaxTree pks z) =
-  concatMap translate' pks ++ translateBody (Just z) ++ [Backtrack, Prompt] where
+translate (SyntaxTree cs g) = concatMap translate' cs
+  ++ transBody (Just g)
+  ++ [Backtrack, Prompt] where
 
   translate' :: PClause -> PCode
-  translate' (PClause nvlt z) =
-    translateHead nvlt ++ translateBody z ++ [Return]
+  translate' (PClause nvlt g) = transHead nvlt
+    ++ transBody g
+    ++ [Return]
 
 
-translateHead :: NVLTerm -> PCode
-translateHead (NVLTerm s _) = [Unify $ STR s, Backtrack]
+transHead :: NVLTerm -> PCode
+transHead (NVLTerm s _) = [Unify $ STR s, Backtrack]
 
 
-translateBody :: Maybe Goal -> PCode
-translateBody Nothing = []
-translateBody (Just (Goal ls)) = concatMap translateBody' ls where
+transBody :: Maybe Goal -> PCode
+transBody Nothing = []
+transBody (Just (Goal ls)) = concatMap transBody' ls where
 
-  translateBody' :: Literal -> PCode
-  translateBody' (Literal _ lt) =
-    case lt of
-         NVar nvlt -> translateBody'' nvlt
+  transBody' :: Literal -> PCode
+  transBody' (Literal _ (NVar nvlt)) = transBody'' nvlt
 
-  translateBody'' :: NVLTerm -> PCode
-  translateBody'' (NVLTerm s _) = [Push $ STR s, Call]
+  transBody'' :: NVLTerm -> PCode
+  transBody'' (NVLTerm s _) = [Push $ STR s, Call]
 
 
 createEnv :: PCode -> Env
 createEnv = createEnv' [] 0 0 where
 
   createEnv' :: [Int] -> Int -> Int -> PCode -> Env
-  createEnv' ks _ c ((Unify _):t) = createEnv' (c:ks) 0 (c + 1) t
-  createEnv' ks _ c (Return:(Push s):t) = createEnv' ks (c + 1) (c + 2) t
-  createEnv' ks z c (Prompt:_) = Env (reverse ks) z c
-  createEnv' ks z c (_:t) = createEnv' ks z (c + 1) t
+  createEnv' cs _ c ((Unify _):t) =
+    createEnv' (c:cs) 0 (c + 1) t
+  createEnv' cs _ c (Return:(Push s):t) =
+    createEnv' cs (c + 1) (c + 2) t
+  createEnv' cs g c (Prompt:_) =
+    Env (reverse cs) g c
+  createEnv' cs g c (_:t) =
+    createEnv' cs g (c + 1) t
 
 
 cNext :: Env -> Int -> Int

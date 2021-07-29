@@ -10,23 +10,23 @@ import MiniTranslator
 import Debug.Trace
 
 
-evaluate :: Storage -> Storage
-evaluate stor@(_, pcode, _, reg) =
-  case pcode !! (p reg) of
-       Prompt -> stor
-       command -> evaluate $ execute command stor
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(_, pcode, _, reg) =
+--   case pcode !! (p reg) of
+--        Prompt -> stor
+--        command -> evaluate $ execute command stor
 
 
 -- use this version of evaluate for debugging purposes:
 
--- evaluate :: Storage -> Storage
--- evaluate stor@(stack, pcode, _, reg)
---   | trace ((show stack) ++ "   " ++ (show reg) ++ "   "
---     ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
---   | otherwise =
---     case pcode !! (p reg) of
---          Prompt -> stor
---          command -> evaluate $ execute command stor
+evaluate :: Storage -> Storage
+evaluate stor@(stack, pcode, _, reg)
+  | trace ((show stack) ++ "   " ++ (show reg) ++ "   "
+    ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
+  | otherwise =
+    case pcode !! (p reg) of
+         Prompt -> stor
+         command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
@@ -40,10 +40,13 @@ execute Backtrack = backtrack
 push :: StackElem -> Storage -> Storage
 push a (stack, pcode, env, reg) =
   let stack' = a : (NUM $ l reg)
-                 : (NUM $ p reg + 2)
+                 : (NUM retAdd)
                  : (NUM $ c reg)
                  : (NUM $ cFirst env)
                  : stack
+      retAdd = if pcode !! (p reg + 2) == Backtrack
+                  then p reg + 3
+                  else p reg + 2
       reg' = reg {c = length stack,
                   r = length stack + 1,
                   p = p reg + 1}
@@ -101,15 +104,6 @@ backtrack stor@(stack, pcode, env, reg)
                 in (stack, pcode, env, reg')
 
 
--- replace element at a given stack position
-replace :: StackElem -> Stack -> Int -> Stack
-replace x stack i
-  | i < 0 || i >= length stack = error "index out of range"
-  | otherwise =
-    let len = length stack
-    in take (len - i - 1) stack ++ x : drop (len - i) stack
-
-
 elemAt :: Stack -> Int -> StackElem
 elemAt stack i = stack !! (length stack - i - 1)
 
@@ -123,4 +117,6 @@ numAt stack i =
 
 setCNext :: Storage -> Stack
 setCNext (stack, _, env, reg) =
-  replace (NUM $ cNext env $ numAt stack $ c reg) stack $ c reg
+  let cNew = NUM $ cNext env $ numAt stack $ c reg
+      pos = length stack - (c reg) - 1
+  in take pos stack ++ cNew : drop (pos + 1) stack
