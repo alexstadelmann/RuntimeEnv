@@ -56,7 +56,8 @@ push a (stack, pcode, env, reg) =
 unify :: StackElem -> Storage -> Storage
 unify a (stack, pcode, env, reg) =
   let reg' = reg {b = a /= (elemAt stack $ c reg + 4),
-                  p = p reg + 1}
+                  p = p reg + 1,
+                  l = numAt stack (c reg + 3) + 1}
   in (stack, pcode, env, reg')
 
 
@@ -68,8 +69,7 @@ call stor@(stack, pcode, env, reg)
     in (stack, pcode, env, reg')
   | otherwise =
     let stack' = setCNext stor
-        reg' = reg {p = numAt stack $ c reg,
-                    l = l reg + 1}
+        reg' = reg {p = numAt stack $ c reg}
     in (stack', pcode, env, reg')
 
 
@@ -92,8 +92,7 @@ backtrack stor@(stack, pcode, env, reg)
                      in (stack, pcode, env, reg')
          (-1, _) -> let newC = numAt stack $ r reg
                         reg' = reg {c = newC,
-                                    r = newC + 1,
-                                    l = numAt stack $ c reg + 3}
+                                    r = newC + 1}
                         stack' = drop (length stack - newC - 5) stack
                     in backtrack (stack', pcode, env, reg')
          _ -> let stack' = setCNext stor
