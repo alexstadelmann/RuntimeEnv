@@ -40,14 +40,14 @@ createEnv :: PCode -> Env
 createEnv = createEnv' [] 0 0 where
 
   createEnv' :: [Int] -> Int -> Int -> PCode -> Env
-  createEnv' cs _ c ((Unify _):t) =
-    createEnv' (c:cs) 0 (c + 1) t
-  createEnv' cs _ c (Return:(Push s):t) =
-    createEnv' cs (c + 1) (c + 2) t
-  createEnv' cs g c (Prompt:_) =
-    Env (reverse cs) g c
-  createEnv' cs g c (_:t) =
-    createEnv' cs g (c + 1) t
+  createEnv' cs _ i ((Unify _):t) =
+    createEnv' (i:cs) 0 (i + 1) t
+  createEnv' cs _ i (Return:(Push _):t) =
+    createEnv' cs (i + 1) (i + 2) t
+  createEnv' cs g i (Prompt:_) =
+    Env {clauses = reverse cs, cGoal = g, cLast = i}
+  createEnv' cs g i (_:t) =
+    createEnv' cs g (i + 1) t
 
 
 cNext :: Env -> Int -> Int
