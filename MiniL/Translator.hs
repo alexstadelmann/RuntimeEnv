@@ -1,4 +1,5 @@
-module MiniTranslator(
+module Translator
+(
   translate,
   createEnv,
   cNext,

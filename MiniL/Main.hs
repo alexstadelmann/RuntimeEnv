@@ -4,7 +4,7 @@ module Main where
 import Declarations
 import Tokenizer
 import Parser
-import MiniTranslator
+import Translator
 import MiniL
 
 
@@ -39,15 +39,15 @@ nextSolution s = do
 
 showSolution :: Stack -> String
 showSolution = showSolution' "" where
-  
+
   showSolution' :: String -> Stack -> String
   showSolution' acc [] = acc
   showSolution' acc ((STR s):t) = showSolution' (spaces t ++ s ++ ('\n':acc)) t
   showSolution' acc (_:t) = showSolution' acc t
-  
+
   spaces :: Stack -> String
   spaces ((NUM n):t) = spaces' "" n
-  
+
   spaces' :: String -> Int -> String
   spaces' acc i
     | i <= 0 = acc

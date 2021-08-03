@@ -6,27 +6,27 @@ module MiniL
   where
 
 import Declarations
-import MiniTranslator
-import Debug.Trace
+import Translator
+-- import Debug.Trace
 
 
--- evaluate :: Storage -> Storage
--- evaluate stor@(_, pcode, _, reg) =
---   case pcode !! (p reg) of
---        Prompt -> stor
---        command -> evaluate $ execute command stor
+evaluate :: Storage -> Storage
+evaluate stor@(_, pcode, _, reg) =
+  case pcode !! (p reg) of
+       Prompt -> stor
+       command -> evaluate $ execute command stor
 
 
 -- use this version of evaluate for debugging purposes:
 
-evaluate :: Storage -> Storage
-evaluate stor@(stack, pcode, _, reg)
-  | trace ((show stack) ++ "   " ++ (show reg) ++ "   "
-    ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
-  | otherwise =
-    case pcode !! (p reg) of
-         Prompt -> stor
-         command -> evaluate $ execute command stor
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(stack, pcode, _, reg)
+--   | trace ((show stack) ++ "   " ++ (show reg) ++ "   "
+--     ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
+--   | otherwise =
+--     case pcode !! (p reg) of
+--          Prompt -> stor
+--          command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
