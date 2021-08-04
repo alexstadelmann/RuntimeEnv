@@ -34,25 +34,35 @@ nextSolution s = do
       (stack, pcode, env, reg) = result
   if b reg
      then putStrLn "No (more) solutions"
-     else do putStrLn $ showSolution stack
+     else do putStrLn $ showSolution $ reverse stack
              wantMore result
 
 
 showSolution :: Stack -> String
-showSolution = showSolution' "" where
+showSolution (NUM n : t@(STR _ _ : _)) =
+  let result = display "" t
+  in spaces n ++ fst result ++ "\n" ++ showSolution (snd result)
+showSolution [] = ""
+showSolution (_ : t) = showSolution t
 
-  showSolution' :: String -> Stack -> String
-  showSolution' acc [] = acc
-  showSolution' acc ((STR s i):t) = showSolution' (spaces t ++ s ++ ('\n':acc)) t
-  showSolution' acc (_:t) = showSolution' acc t
 
-  spaces :: Stack -> String
-  spaces ((NUM n):t) = spaces' "" n
+display :: String -> Stack -> (String, Stack)
+display acc (STR s i : t)
+  | i > 0 = display' (acc ++ s ++ "(") t $ i - 1
+  | otherwise = (acc ++ s, t) where
+  
+  display' :: String -> Stack -> Int -> (String, Stack)
+  display' acc st i
+    | i > 0 = let result = display acc st
+              in display' (fst result ++ ", ") (snd result) $ i - 1
+    | otherwise = let result = display acc st
+                  in (fst result ++ ")", snd result)
 
-  spaces' :: String -> Int -> String
-  spaces' acc i
-    | i <= 0 = acc
-    | otherwise = spaces' (' ':' ':acc) $ i - 1
+
+spaces :: Int -> String
+spaces i
+  | i > 0 = ' ' : ' ' : spaces (i - 1)
+  | otherwise = ""
 
 
 wantMore :: Storage -> IO ()
