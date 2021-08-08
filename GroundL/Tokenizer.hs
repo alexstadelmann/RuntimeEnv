@@ -10,50 +10,62 @@ import Data.Char
 import Declarations
 
 
-tokenize:: String -> [(Symbol,Int)]  --
+tokenize:: String -> [(Symbol,Int)]
 tokenize "" = []
-tokenize xs =  tokenize' (filter (\a -> a `notElem` [' ', '\r']) xs) "" 1 []   --
+tokenize xs = tokenize' (filter (\a -> a `notElem` [' ', '\r']) xs) "" 1 []
 
 
-tokenize' :: String -> String -> Int -> [(Symbol,Int)] -> [(Symbol,Int)]  --
+tokenize' :: String -> String -> Int -> [(Symbol,Int)] -> [(Symbol,Int)]
 
 -- kein nächstes Zeichen:
-tokenize' "" "" _ listacc = reverse listacc --
+tokenize' "" "" _ acc = reverse acc
 
-tokenize' "" symbolacc lineacc listacc --
-  | isUpper $ last symbolacc = reverse $ (Variable $ reverse symbolacc, lineacc):listacc
-  | otherwise = reverse $ (Name $ reverse symbolacc, lineacc):listacc
+tokenize' "" symacc line acc
+  | isUpper $ last symacc =
+    reverse $ (Variable $ reverse symacc, line):acc
+  | otherwise =
+    reverse $ (Name $ reverse symacc, line):acc
 
 -- nächste drei Zeichen "not":
-tokenize' ('n':'o':'t':xs) "" lineacc listacc = tokenize' xs "" lineacc $ (Not, lineacc):listacc
+tokenize' ('n':'o':'t':xs) "" line acc =
+  tokenize' xs "" line $ (Not, line):acc
 
 -- nächste zwei Zeichen ":-"
-tokenize' (':':'-':xs) "" lineacc listacc = tokenize' xs "" lineacc $ (If, lineacc):listacc
-tokenize' xxs@(':':'-':xs) symbolacc lineacc listacc 
-  | isUpper $ last symbolacc = tokenize' xxs "" lineacc $ (Variable $ reverse symbolacc, lineacc):listacc
-  | otherwise = tokenize' xxs "" lineacc $ (Name $ reverse symbolacc, lineacc):listacc
+tokenize' (':':'-':xs) "" line acc =
+  tokenize' xs "" line $ (If, line):acc
 
--- nächstes Zeichen Point, And, LBracket oder RBracket
-tokenize' (x:xs) "" lineacc listacc
-  | x == '.' = tokenize' xs "" lineacc $ (Point, lineacc):listacc
-  | x == ',' = tokenize' xs "" lineacc $ (And, lineacc):listacc
-  | x == '(' = tokenize' xs "" lineacc $ (LBracket, lineacc):listacc
-  | x == ')' = tokenize' xs "" lineacc $ (RBracket, lineacc):listacc
+tokenize' xxs@(':':'-':xs) symacc line acc 
+  | isUpper $ last symacc =
+    tokenize' xxs "" line $ (Variable $ reverse symacc, line):acc
+  | otherwise =
+    tokenize' xxs "" line $ (Name $ reverse symacc, line):acc
+
+-- nächstes Zeichen Point, And, LBracket, RBracket oder NewLine
+tokenize' (x:xs) "" line acc
+  | x == '.' = tokenize' xs "" line $ (Point, line) : acc
+  | x == ',' = tokenize' xs "" line $ (And, line) : acc
+  | x == '(' = tokenize' xs "" line $ (LBracket, line) : acc
+  | x == ')' = tokenize' xs "" line $ (RBracket, line) : acc
   | x == '\n' =
-     let listacc' = case listacc of             -- Wert von listacc' zugewiesen (neue Zeile hinzufügen, falls noch keine vorhanden)
-                         (NewLine,_):t -> listacc
-                         _ -> (NewLine, lineacc) : listacc
-     in tokenize' xs "" (lineacc + 1) listacc'  -- Wert von listacc' verwendet
+    let acc' = case acc of
+                    (NewLine,_) : t -> acc
+                    _ -> (NewLine, line) : acc
+    in tokenize' xs "" (line + 1) acc'  -- Wert von acc' verwendet
 
-tokenize' (x:xs) symbolacc lineacc listacc
+tokenize' (x:xs) symacc line acc
   | not $ isValid x = error $ "unerlaubtes Zeichen: " ++ show x
   | x == '.' || x == ',' || x == '(' || x == ')' || x == '\n' = 
-    if isUpper $ last symbolacc
-       then tokenize' (x:xs) "" lineacc $ (Variable $ reverse symbolacc, lineacc):listacc
-       else tokenize' (x:xs) "" lineacc $ (Name $ reverse symbolacc, lineacc):listacc
-  | otherwise = tokenize' xs (x:symbolacc) lineacc listacc
+    if isUpper $ last symacc
+       then tokenize' (x:xs) "" line $ (Variable $ reverse symacc, line) : acc
+       else tokenize' (x:xs) "" line $ (Name $ reverse symacc, line):acc
+  | otherwise = tokenize' xs (x : symacc) line acc
 
 
-
-isValid:: Char -> Bool
-isValid x = isAlphaNum x || x == '(' || x == ')'|| x == ',' ||x== '.' || x==' ' || x=='\n' || x=='\r'
+isValid :: Char -> Bool
+isValid x = isAlphaNum x
+          || x == '('
+          || x == ')'
+          || x == ','
+          || x == '.'
+          || x == ' '
+          || x == '\n'

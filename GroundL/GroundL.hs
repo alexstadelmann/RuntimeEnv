@@ -5,9 +5,11 @@ module GroundL
 )
   where
 
+
+-- import Debug.Trace
+
 import Declarations
 import Translator
--- import Debug.Trace
 
 
 evaluate :: Storage -> Storage
