@@ -53,7 +53,8 @@ tokenize' (x:xs) "" line acc
     in tokenize' xs "" (line + 1) acc'  -- Wert von acc' verwendet
 
 tokenize' (x:xs) symacc line acc
-  | not $ isValid x = error $ "unerlaubtes Zeichen: " ++ show x
+  | not $ isValid x =
+    error $ "Invalid input in line " ++ show line ++ ": " ++ show x
   | x == '.' || x == ',' || x == '(' || x == ')' || x == '\n' = 
     if isUpper $ last symacc
        then tokenize' (x:xs) "" line $ (Variable $ reverse symacc, line) : acc
