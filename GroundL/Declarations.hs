@@ -62,7 +62,20 @@ data Symbol = Variable String
             | If
             | Point
             | And
-              deriving (Show)
+            | NewLine
+
+              
+instance Show Symbol where
+  show (Variable s) = s      
+  show (Name s) = s 
+  show LBracket = "("
+  show RBracket = ")"
+  show Not = "not"
+  show If = ":-"
+  show Point = "."
+  show And = ","
+  show NewLine = "new line"
+
 
 data SyntaxTree = SyntaxTree [PClause] Goal
   deriving (Show)
