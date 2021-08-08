@@ -61,7 +61,7 @@ display acc (STR s i : t)
 
 spaces :: Int -> String
 spaces i
-  | i > 0 = ' ' : ' ' : spaces (i - 1)
+  | i > 0 = ' ' : '|' : ' ' : spaces (i - 1)
   | otherwise = ""
 
 
