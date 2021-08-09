@@ -3,7 +3,6 @@ module Declarations
   Stack,
   StackElem(..),
   PCode,
-  PushArg(..),
   Env(..),
   Command(..),
   Register(..),
@@ -15,15 +14,17 @@ module Declarations
   IsNegated,
   NVLTerm(..),
   LTerm(..),
-  Storage(..)
+  Storage(..),
+  VarSeq
 )
   where
 
+import qualified Data.Set as Set
 
 type Stack = [StackElem]
 
 data StackElem = NUM Int
-               | STR String Int
+               | STR String
                  deriving (Show, Eq)
 
 type PCode = [Command]
@@ -31,11 +32,7 @@ type PCode = [Command]
 data Env = Env {clauses :: [Int], cGoal :: Int, cLast :: Int}
   deriving (Show)
 
-data PushArg = Atom String Int
-             | CHP
-               deriving (Show, Eq)
-
-data Command = Push PushArg
+data Command = Push StackElem
              | Unify StackElem
              | Call
              | Return
@@ -48,8 +45,7 @@ data Register = Register {b :: Bool,
                           c :: Int,
                           r :: Int,
                           p :: Int,
-                          l :: Int,
-                          up :: Int}
+                          l :: Int}
     deriving (Show)
 
 
@@ -98,3 +94,5 @@ data LTerm = Var String | NVar NVLTerm
   deriving (Show, Eq)
 
 type Storage = (Stack, PCode, Env, Register)
+
+type VarSeq = Set.Set String 
