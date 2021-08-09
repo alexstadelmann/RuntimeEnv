@@ -28,7 +28,7 @@ program s@((Name _, _ ) : _) pcs =
 program s@((If , _) : _) pcs =
   let (rest, g) = goal s
       pcs' = reverse pcs
-  in (rest, SyntaxTree (zip pcs' $ map varseqpc pcs') (g, varseqgoal g))
+  in (rest, SyntaxTree (zip (map varseqpc pcs') pcs') (varseqgoal g, g))
 
 program ((sym, line) : _) _ =
   error $ "Parse error in line " ++ show line
@@ -39,7 +39,7 @@ pclause :: [(Symbol, Int)] -> ([(Symbol, Int)], PClause)
 pclause s@((Name _, _) : _) = uncurry pclause' $ nvlterm s where
 
   pclause' :: [(Symbol, Int)] -> NVLTerm -> ([(Symbol, Int)], PClause)
-  pclause' ((Point, _) : t) nvlt = uncurry pclause'' (t, PClause nvlt Nothing)
+  pclause' ((Point, _) : t) nvlt = pclause'' t $ PClause nvlt Nothing
   pclause' s@((If, _) : _) nvlt =
     let g = goal s
     in pclause'' (fst g) $ PClause nvlt $ Just $ snd g
@@ -50,7 +50,7 @@ pclause s@((Name _, _) : _) = uncurry pclause' $ nvlterm s where
   -- Jede Klausel muss in eigener, neuer Zeile stehen:
   pclause'' :: [(Symbol, Int)] -> PClause -> ([(Symbol, Int)], PClause)
   pclause'' ((NewLine, _) : t) pc = (t, pc) 
-  pclause'' ((sym,line) : _) _ = 
+  pclause'' ((sym, line) : _) _ = 
     error $ "Parse error in line " ++ show line
     ++ ".\nExpected new line, but found: " ++ show sym
 

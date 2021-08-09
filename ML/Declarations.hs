@@ -4,6 +4,7 @@ module Declarations
   StackElem(..),
   PCode,
   Env(..),
+  Arg(..),
   Command(..),
   Register(..),
   Symbol(..),
@@ -25,6 +26,7 @@ type Stack = [StackElem]
 
 data StackElem = NUM Int
                | STR String Int
+               | VAR String Int
                  deriving (Show, Eq)
 
 type PCode = [Command]
@@ -32,12 +34,15 @@ type PCode = [Command]
 data Env = Env {clauses :: [Int], cGoal :: Int, cLast :: Int}
   deriving (Show)
 
-data PushArg = Atom String Int
-             | CHP
-               deriving (Show, Eq)
+data Arg = STR' String Int
+         | VAR' String
+         | CHP
+         | BegEnv
+         | EndEnv Int
+           deriving (Show, Eq)
 
-data Command = Push PushArg
-             | Unify StackElem
+data Command = Push Arg
+             | Unify Arg
              | Call
              | Return
              | Backtrack
@@ -78,7 +83,7 @@ instance Show Symbol where
   show NewLine = "new line"
 
 
-data SyntaxTree = SyntaxTree [(PClause, VarSeq)] (Goal, VarSeq)
+data SyntaxTree = SyntaxTree [(VarSeq, PClause)] (VarSeq, Goal)
   deriving (Show)
 
 data PClause = PClause NVLTerm (Maybe Goal)

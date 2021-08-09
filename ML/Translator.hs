@@ -8,23 +8,26 @@ module Translator
   where
 
 
+import qualified Data.Set as Set
+
 import Declarations
 
 
 translate :: SyntaxTree -> PCode
-translate (SyntaxTree cs g) =
-  concatMap translate' cs ++ transBody (Just g)
-  ++ [Backtrack, Prompt] where
+translate (SyntaxTree cs (varseq, g)) =
+  concatMap translate' cs ++ Push BegEnv : transEnv varseq
+  ++ transBody (Just g) ++ [Backtrack, Prompt] where
 
-  translate' :: PClause -> PCode
-  translate' (PClause nvlt g) =
-    transHead nvlt ++ transBody g ++ [Return]
+  translate' :: (VarSeq, PClause) -> PCode
+  translate' (varSeq, PClause nvlt g) =
+    Push BegEnv : transEnv varSeq
+    ++ transHead nvlt ++ transBody g ++ [Return]
 
 
 transHead :: NVLTerm -> PCode
 transHead nvlt = concatMap transHead' $ linLTerm $ NVar nvlt
 
-transHead' :: StackElem -> PCode
+transHead' :: Arg -> PCode
 transHead' str = [Unify str, Backtrack]
 
 
@@ -33,14 +36,19 @@ transBody Nothing = []
 transBody (Just (Goal ls)) = concatMap transBody' ls where
 
   transBody' :: Literal -> PCode
-  transBody' (Literal _ lt) = Push CHP : map transBody'' (linLTerm lt) ++ [Call]
-
-  transBody'' :: StackElem -> Command
-  transBody'' (STR s i) = Push $ Atom s i
+  transBody' (Literal _ lt) =
+    Push CHP : map (\x -> Push x) (linLTerm lt) ++ [Call]
 
 
-linLTerm :: LTerm -> [StackElem]
-linLTerm (NVar (NVLTerm a xs)) = STR a (length xs) : concatMap linLTerm xs
+transEnv :: VarSeq -> PCode
+transEnv v =
+  foldl (\xs x -> Push (VAR' x) : xs) [Push $ EndEnv $ Set.size v] v
+
+
+linLTerm :: LTerm -> [Arg]
+linLTerm (Var s) = [VAR' s]
+linLTerm (NVar (NVLTerm a xs)) =
+  STR' a (length xs) : concatMap linLTerm xs
 
 
 createEnv :: PCode -> Env

@@ -1,4 +1,4 @@
-module GroundL
+module ML
 (
   evaluate,
   numAt
@@ -39,7 +39,7 @@ execute Return = returnL
 execute Backtrack = backtrack
 
 
-push :: PushArg -> Storage -> Storage
+push :: Arg -> Storage -> Storage
 push CHP (stack, pcode, env, reg) =
   let stack' = NUM (l reg)
              : NUM retAdd
@@ -61,13 +61,13 @@ push CHP (stack, pcode, env, reg) =
          Push CHP -> i
          _ -> getRetAdd pcode $ i + 1
 
-push (Atom s i) (stack, pcode, env, reg) =
+push (STR' s i) (stack, pcode, env, reg) =
   let stack' = STR s i : stack
       reg' = reg {p = p reg + 1}
   in (stack', pcode, env, reg')
 
 
-unify :: StackElem -> Storage -> Storage
+unify :: Arg -> Storage -> Storage
 unify a (stack, pcode, env, reg)
   | not $ b reg =
     let reg' = reg {b = a /= elemAt stack (up reg),
