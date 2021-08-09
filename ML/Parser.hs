@@ -5,6 +5,8 @@ module Parser
   where
 
 
+import qualified Data.Set as Set
+  
 import Declarations
 
 
@@ -24,8 +26,9 @@ program s@((Name _, _ ) : _) pcs =
   in program (fst result) $ (snd result) : pcs
 
 program s@((If , _) : _) pcs =
-  let g = goal s
-  in (fst g, SyntaxTree (reverse pcs) $ snd g)
+  let (rest, g) = goal s
+      pcs' = reverse pcs
+  in (rest, SyntaxTree (zip pcs' $ map varseqpc pcs') (g, varseqgoal g))
 
 program ((sym, line) : _) _ =
   error $ "Parse error in line " ++ show line
@@ -148,20 +151,21 @@ fstOfLit s = fstOfLTerm s
 
 varseqpc :: PClause -> VarSeq
 varseqpc (PClause nvlt Nothing) = varseqnvlt nvlt
-varseqpc (PClause nvlt (Just g)) = Set.union (varseqgoal g) $ varseqnvlt nvlt 
+varseqpc (PClause nvlt (Just g)) = Set.union (varseqgoal g) $ varseqnvlt nvlt
 
 
 varseqnvlt :: NVLTerm -> VarSeq
-varseqnvlt (NVLTerm _ lts) = Set.unions $ map varseqlt lts 
+varseqnvlt (NVLTerm _ lts) = Set.unions $ map varseqlt lts
 
 
-varseqlt :: LTerm -> VarSeq 
-varseqlt (Var str) = Set.singleton str 
+varseqlt :: LTerm -> VarSeq
+varseqlt (Var str) = Set.singleton str
 varseqlt (NVar nvlt) = varseqnvlt nvlt
 
 
 varseqgoal :: Goal -> VarSeq
 varseqgoal (Goal lits) = Set.unions $ map varseqlit lits
+
 
 varseqlit :: Literal -> VarSeq
 varseqlit (Literal _ lt) = varseqlt lt

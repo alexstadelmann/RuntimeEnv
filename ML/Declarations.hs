@@ -24,7 +24,7 @@ import qualified Data.Set as Set
 type Stack = [StackElem]
 
 data StackElem = NUM Int
-               | STR String
+               | STR String Int
                  deriving (Show, Eq)
 
 type PCode = [Command]
@@ -32,7 +32,11 @@ type PCode = [Command]
 data Env = Env {clauses :: [Int], cGoal :: Int, cLast :: Int}
   deriving (Show)
 
-data Command = Push StackElem
+data PushArg = Atom String Int
+             | CHP
+               deriving (Show, Eq)
+
+data Command = Push PushArg
              | Unify StackElem
              | Call
              | Return
@@ -45,7 +49,8 @@ data Register = Register {b :: Bool,
                           c :: Int,
                           r :: Int,
                           p :: Int,
-                          l :: Int}
+                          l :: Int,
+                          up :: Int}
     deriving (Show)
 
 
@@ -73,7 +78,7 @@ instance Show Symbol where
   show NewLine = "new line"
 
 
-data SyntaxTree = SyntaxTree [PClause] Goal
+data SyntaxTree = SyntaxTree [(PClause, VarSeq)] (Goal, VarSeq)
   deriving (Show)
 
 data PClause = PClause NVLTerm (Maybe Goal)
