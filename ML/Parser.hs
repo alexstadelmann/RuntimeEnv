@@ -144,3 +144,24 @@ fstOfLTerm _ = False
 fstOfLit :: Symbol -> Bool
 fstOfLit Not = True
 fstOfLit s = fstOfLTerm s
+
+
+varseqpc :: PClause -> VarSeq
+varseqpc (PClause nvlt Nothing) = varseqnvlt nvlt
+varseqpc (PClause nvlt (Just g)) = Set.union (varseqgoal g) $ varseqnvlt nvlt 
+
+
+varseqnvlt :: NVLTerm -> VarSeq
+varseqnvlt (NVLTerm _ lts) = Set.unions $ map varseqlt lts 
+
+
+varseqlt :: LTerm -> VarSeq 
+varseqlt (Var str) = Set.singleton str 
+varseqlt (NVar nvlt) = varseqnvlt nvlt
+
+
+varseqgoal :: Goal -> VarSeq
+varseqgoal (Goal lits) = Set.unions $ map varseqlit lits
+
+varseqlit :: Literal -> VarSeq
+varseqlit (Literal _ lt) = varseqlt lt
