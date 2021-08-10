@@ -2,7 +2,7 @@ module Declarations
 (
   Stack,
   StackElem(..),
-  PCode,
+  Code,
   Env(..),
   Arg(..),
   Command(..),
@@ -20,26 +20,24 @@ module Declarations
 )
   where
 
+
 import qualified Data.Set as Set
 
+
+type Storage = (Stack, Code, Env, Register, Trail, US)
+
+
 type Stack = [StackElem]
+
 
 data StackElem = NUM Int
                | STR String Int
                | VAR String Int
-                 deriving (Show, Eq)
+  deriving (Show, Eq)
 
-type PCode = [Command]
 
-data Env = Env {clauses :: [Int], cGoal :: Int, cLast :: Int}
-  deriving (Show)
+type Code = [Command]
 
-data Arg = STR' String Int
-         | VAR' String
-         | CHP
-         | BegEnv
-         | EndEnv Int
-           deriving (Show, Eq)
 
 data Command = Push Arg
              | Unify Arg
@@ -47,19 +45,49 @@ data Command = Push Arg
              | Return
              | Backtrack
              | Prompt
-               deriving (Show, Eq)
-
--- l: level of current CHP in the proof tree
-data Register = Register {b :: Bool,
-                          c :: Int,
-                          r :: Int,
-                          p :: Int,
-                          l :: Int,
-                          up :: Int}
-    deriving (Show)
+  deriving (Show, Eq)
 
 
--- Deklarationen (insbesondere) für den Tokenizer und für den Parser
+data Arg = STR' String Int
+         | VAR' String
+         | CHP
+         | BegEnv
+         | EndEnv Int
+  deriving (Show, Eq)
+
+
+data Env = Env {clauses :: [Int],
+                cGoal :: Int,
+                cLast :: Int}
+  deriving (Show)
+
+
+data Register = Reg {b :: Bool, -- backtrack flag
+                     c :: Int, -- last CHP
+                     r :: Int, -- CHP to return to
+                     p :: Int, -- program counter
+                     l :: Int, -- level of current CHP
+                     e :: Int, -- local environment
+                     up :: Int, -- unification pointer
+                     ut :: Int, -- top of US
+                     tt :: Int, -- top of Trail
+                     pc :: Int, -- push counter
+                     sc :: Int, -- skip counter
+                     ac :: Int} -- argument counter
+  deriving (Show)
+
+
+type Trail = [Int]
+
+
+type US = [Int]
+
+
+type VarSeq = Set.Set String 
+
+
+-- declarations for Tokenizer and Parser
+
 data Symbol = Variable String
             | Name String
             | LBracket
@@ -70,7 +98,6 @@ data Symbol = Variable String
             | And
             | NewLine
 
-              
 instance Show Symbol where
   show (Variable s) = s      
   show (Name s) = s 
@@ -86,22 +113,25 @@ instance Show Symbol where
 data SyntaxTree = SyntaxTree [(VarSeq, PClause)] (VarSeq, Goal)
   deriving (Show)
 
+
 data PClause = PClause NVLTerm Goal
   deriving (Show)
 
+
 type Goal = [Literal]
+
 
 data Literal = Literal IsNegated LTerm
   deriving (Show)
 
+
 type IsNegated = Bool
+
 
 data NVLTerm = NVLTerm String [LTerm]
   deriving (Show, Eq)
 
-data LTerm = Var String | NVar NVLTerm
+
+data LTerm = Var String
+           | NVar NVLTerm
   deriving (Show, Eq)
-
-type Storage = (Stack, PCode, Env, Register)
-
-type VarSeq = Set.Set String 

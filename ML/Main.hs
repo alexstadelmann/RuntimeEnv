@@ -16,25 +16,33 @@ main = do
   inputProgram <- readFile inputFilePath
   let tokens = tokenize inputProgram
       syntaxTree = parse tokens
-      pcode = translate syntaxTree
-      stack = []
-      env = createEnv pcode
-      reg = Register {c = -1,
-                      r = -1,
-                      b = False,
-                      p = cGoal env,
-                      l = 0,
-                      up = 0}
-  nextSolution (stack, pcode, env, reg)
+      cod = translate syntaxTree
+      st = []
+      env = createEnv cod
+      reg = Reg {b = False,
+                 c = -1,
+                 r = -1,
+                 p = cGoal env,
+                 e = -1,
+                 l = 0,
+                 up = 0,
+                 ut = 0,
+                 tt = 0,
+                 pc = 0,
+                 sc = 0,
+                 ac = -1}
+      tr = []
+      us = []
+  nextSolution (st, cod, env, reg, tr, us)
 
 
 nextSolution :: Storage -> IO ()
 nextSolution s = do
   let result = evaluate s
-      (stack, pcode, env, reg) = result
+      (st, cod, env, reg, tr, us) = result
   if b reg
      then putStrLn "No (more) solutions"
-     else do putStrLn $ showSolution $ reverse stack
+     else do putStrLn $ showSolution $ reverse st
              wantMore result
 
 
@@ -66,7 +74,7 @@ spaces i
 
 
 wantMore :: Storage -> IO ()
-wantMore s@(stack, pcode, env, reg) = do
+wantMore s@(st, cod, env, reg, tr, us) = do
   putStrLn "Want More? (Yes [Y], No [N])"
   putStr "> "
   more <- getLine
@@ -75,7 +83,7 @@ wantMore s@(stack, pcode, env, reg) = do
        "Y" -> let reg' = reg {b = True,
                               p = p reg - 1,
                               r = c reg + 1,
-                              l = numAt stack $ c reg + 3}
-              in nextSolution (stack, pcode, env, reg')
+                              l = numAt st $ c reg + 3}
+              in nextSolution (st, cod, env, reg', tr, us)
        _ -> do putStrLn "Not a valid input"
                wantMore s

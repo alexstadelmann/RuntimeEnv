@@ -13,33 +13,33 @@ import qualified Data.Set as Set
 import Declarations
 
 
-translate :: SyntaxTree -> PCode
+translate :: SyntaxTree -> Code
 translate (SyntaxTree cs (varseq, g)) =
   concatMap translate' cs ++ Push BegEnv : transEnv varseq
   ++ transBody g ++ [Backtrack, Prompt] where
 
-  translate' :: (VarSeq, PClause) -> PCode
+  translate' :: (VarSeq, PClause) -> Code
   translate' (varSeq, PClause nvlt g) =
     Push BegEnv : transEnv varSeq
     ++ transHead nvlt ++ transBody g ++ [Return]
 
 
-transHead :: NVLTerm -> PCode
+transHead :: NVLTerm -> Code
 transHead nvlt = concatMap transHead' $ linLTerm $ NVar nvlt
 
-transHead' :: Arg -> PCode
+transHead' :: Arg -> Code
 transHead' str = [Unify str, Backtrack]
 
 
-transBody :: Goal -> PCode
+transBody :: Goal -> Code
 transBody = concatMap transBody' where
 
-  transBody' :: Literal -> PCode
+  transBody' :: Literal -> Code
   transBody' (Literal _ lt) =
     Push CHP : map (\x -> Push x) (linLTerm lt) ++ [Call]
 
 
-transEnv :: VarSeq -> PCode
+transEnv :: VarSeq -> Code
 transEnv v =
   foldl (\xs x -> Push (VAR' x) : xs) [Push $ EndEnv $ Set.size v] v
 
@@ -50,10 +50,10 @@ linLTerm (NVar (NVLTerm a xs)) =
   STR' a (length xs) : concatMap linLTerm xs
 
 
-createEnv :: PCode -> Env
+createEnv :: Code -> Env
 createEnv = createEnv' [] 0 where
 
-  createEnv' :: [Int] -> Int -> PCode -> Env
+  createEnv' :: [Int] -> Int -> Code -> Env
   createEnv' cs i (Push BegEnv : t) =
     createEnv' (i : cs) (i + 1) t
   createEnv' (h : t) i (Prompt : _) =
