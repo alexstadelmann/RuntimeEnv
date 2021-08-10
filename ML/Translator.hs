@@ -52,19 +52,15 @@ linLTerm (NVar (NVLTerm a xs)) =
 
 
 createEnv :: PCode -> Env
-createEnv = createEnv' [] 0 0 where
+createEnv = createEnv' [] 0 where
 
-  createEnv' :: [Int] -> Int -> Int -> PCode -> Env
-  createEnv' cs _ 0 ((Unify _) : t)=
-    createEnv' (0:cs) 0 1 t
-  createEnv' cs _ i (Return:(Unify _) : t) =
-    createEnv' ((i+1):cs) 0 (i + 2) t
-  createEnv' cs _ i (Return:(Push _) : t) =
-    createEnv' cs (i + 1) (i + 2) t
-  createEnv' cs g i (Prompt : _) =
-    Env {clauses = reverse cs, cGoal = g, cLast = i}
-  createEnv' cs g i (_ : t) =
-    createEnv' cs g (i + 1) t
+  createEnv' :: [Int] -> Int -> PCode -> Env
+  createEnv' cs i (Push BegEnv : t) =
+    createEnv' (i : cs) (i + 1) t
+  createEnv' (h : t) i (Prompt : _) =
+    Env {clauses = reverse t, cGoal = h, cLast = i}
+  createEnv' cs i (_ : t) =
+    createEnv' cs (i + 1) t
 
 
 cNext :: Env -> Int -> Int
@@ -72,7 +68,7 @@ cNext env = cNext' (clauses env) where
 
   cNext' :: [Int] -> Int -> Int
   cNext' [] _ = -1
-  cNext' (h:t) i
+  cNext' (h : t) i
     | h <= i = cNext' t i
     | otherwise = h
 
