@@ -10,7 +10,7 @@ module Declarations
   Symbol(..),
   SyntaxTree(..),
   PClause(..),
-  Goal(..),
+  Goal,
   Literal(..),
   IsNegated,
   NVLTerm(..),
@@ -86,11 +86,10 @@ instance Show Symbol where
 data SyntaxTree = SyntaxTree [(VarSeq, PClause)] (VarSeq, Goal)
   deriving (Show)
 
-data PClause = PClause NVLTerm (Maybe Goal)
+data PClause = PClause NVLTerm Goal
   deriving (Show)
 
-data Goal = Goal [Literal]
-  deriving (Show)
+type Goal = [Literal]
 
 data Literal = Literal IsNegated LTerm
   deriving (Show)

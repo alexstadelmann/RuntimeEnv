@@ -16,7 +16,7 @@ import Declarations
 translate :: SyntaxTree -> PCode
 translate (SyntaxTree cs (varseq, g)) =
   concatMap translate' cs ++ Push BegEnv : transEnv varseq
-  ++ transBody (Just g) ++ [Backtrack, Prompt] where
+  ++ transBody g ++ [Backtrack, Prompt] where
 
   translate' :: (VarSeq, PClause) -> PCode
   translate' (varSeq, PClause nvlt g) =
@@ -31,9 +31,8 @@ transHead' :: Arg -> PCode
 transHead' str = [Unify str, Backtrack]
 
 
-transBody :: Maybe Goal -> PCode
-transBody Nothing = []
-transBody (Just (Goal ls)) = concatMap transBody' ls where
+transBody :: Goal -> PCode
+transBody = concatMap transBody' where
 
   transBody' :: Literal -> PCode
   transBody' (Literal _ lt) =

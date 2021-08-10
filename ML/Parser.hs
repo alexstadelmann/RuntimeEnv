@@ -39,10 +39,10 @@ pclause :: [(Symbol, Int)] -> ([(Symbol, Int)], PClause)
 pclause s@((Name _, _) : _) = uncurry pclause' $ nvlterm s where
 
   pclause' :: [(Symbol, Int)] -> NVLTerm -> ([(Symbol, Int)], PClause)
-  pclause' ((Point, _) : t) nvlt = pclause'' t $ PClause nvlt Nothing
+  pclause' ((Point, _) : t) nvlt = pclause'' t $ PClause nvlt []
   pclause' s@((If, _) : _) nvlt =
     let g = goal s
-    in pclause'' (fst g) $ PClause nvlt $ Just $ snd g
+    in pclause'' (fst g) $ PClause nvlt $ snd g
   pclause' ((sym, line) : _) _ =
     error $ "Parse error in line " ++ show line
     ++ ".\nExpected end of program clause or start of goal, but found: " ++ show sym
@@ -73,7 +73,7 @@ goal ((If, _) : t) = goal' t [] where
 
   goal'' :: [(Symbol, Int)] -> [Literal] -> ([(Symbol, Int)], Goal)
   goal'' ((And, _) : t) ls = goal' t ls
-  goal'' ((Point, _) : t) ls = (t, Goal $ reverse ls)
+  goal'' ((Point, _) : t) ls = (t, reverse ls)
   goal'' ((sym, line) : _) _ =
     error $ "Parse error in line " ++ show line
     ++ ".\nExpected end of literal or goal, but found: " ++ show sym
@@ -150,8 +150,7 @@ fstOfLit s = fstOfLTerm s
 
 
 varseqpc :: PClause -> VarSeq
-varseqpc (PClause nvlt Nothing) = varseqnvlt nvlt
-varseqpc (PClause nvlt (Just g)) = Set.union (varseqgoal g) $ varseqnvlt nvlt
+varseqpc (PClause nvlt g) = Set.union (varseqnvlt nvlt) $ varseqgoal g
 
 
 varseqnvlt :: NVLTerm -> VarSeq
@@ -164,7 +163,7 @@ varseqlt (NVar nvlt) = varseqnvlt nvlt
 
 
 varseqgoal :: Goal -> VarSeq
-varseqgoal (Goal lits) = Set.unions $ map varseqlit lits
+varseqgoal lits = Set.unions $ map varseqlit lits
 
 
 varseqlit :: Literal -> VarSeq
