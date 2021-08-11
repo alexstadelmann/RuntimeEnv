@@ -71,7 +71,6 @@ data Register = Reg {b :: Bool, -- backtrack flag
                      l :: Int, -- level of current CHP
                      e :: Int, -- local environment
                      up :: Int, -- unification pointer
-                     ut :: Int, -- top of US
                      pc :: Int, -- push counter
                      sc :: Int, -- skip counter
                      ac :: Int} -- argument counter
