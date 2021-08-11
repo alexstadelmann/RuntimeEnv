@@ -26,7 +26,6 @@ main = do
                  e = -1,
                  l = 0,
                  up = 0,
-                 ut = 0,
                  pc = 0,
                  sc = 0,
                  ac = -1}
@@ -57,7 +56,7 @@ display :: String -> Stack -> (String, Stack)
 display acc (STR s i : t)
   | i > 0 = display' (acc ++ s ++ "(") t $ i - 1
   | otherwise = (acc ++ s, t) where
-  
+
   display' :: String -> Stack -> Int -> (String, Stack)
   display' acc st i
     | i > 0 = let result = display acc st
