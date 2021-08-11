@@ -33,6 +33,7 @@ type Stack = [StackElem]
 data StackElem = NUM Int
                | STR String Int
                | VAR String Int
+               | EndEnv
   deriving (Show, Eq)
 
 
@@ -51,8 +52,7 @@ data Command = Push Arg
 data Arg = STR' String Int
          | VAR' String
          | CHP
-         | BegEnv
-         | EndEnv Int
+         | EndEnv' Int
   deriving (Show, Eq)
 
 
@@ -83,7 +83,7 @@ type Trail = [Int]
 type US = [Int]
 
 
-type VarSeq = Set.Set String 
+type VarSeq = Set.Set String
 
 
 -- declarations for Tokenizer and Parser
@@ -99,8 +99,8 @@ data Symbol = Variable String
             | NewLine
 
 instance Show Symbol where
-  show (Variable s) = s      
-  show (Name s) = s 
+  show (Variable s) = s
+  show (Name s) = s
   show LBracket = "("
   show RBracket = ")"
   show Not = "not"
