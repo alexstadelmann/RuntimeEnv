@@ -153,10 +153,10 @@ unify (STR' sym ar) (st, cod, env, reg, tr, us)
   | otherwise =
     case elemAt st $ deref st $ up reg of
          VAR sym' _ ->
-           let derefUP = deref st $ up reg
+           let ref = deref st $ up reg
                reg' = reg {pc = ar}
-               tr' = derefUP : tr
-               st' = replace st derefUP $ VAR sym' $ length st
+               tr' = ref : tr
+               st' = replace st ref $ VAR sym' $ length st
                st'' = STR sym ar : st'
            in updateReg (st'', cod, env, reg', tr', us) 0
          STR sym' ar' ->
@@ -167,13 +167,65 @@ unify (STR' sym ar) (st, cod, env, reg, tr, us)
               else let (us', reg') = save_AC_UP us reg st
                    in updateReg (st, cod, env, reg', tr, us') ar
 
-unify (VAR' sym) (st, cod, env, reg, tr, us)
+unify (VAR' sym) sto@(st, cod, env, reg, tr, us)
   | pc reg >= 1 =
     let reg' = reg {pc = pc reg - 1,
                     p = p reg + 1}
         st' = VAR sym (sAdd sym False st reg) : st
     in (st', cod, env, reg', tr, us)
-  | otherwise = undefined
+  | otherwise =
+    let ref = deref st $ sAdd sym False st reg
+    in case elemAt st ref of
+            VAR sym' _ ->
+              let st' = replace st ref $ VAR sym' $ up reg
+                  tr' = sAdd sym False st' reg : tr
+                  reg' = reg {sc = arity $ elemAt st' $ up reg}
+              in skip (st', cod, env, reg', tr', us)
+            STR sym' ar -> unify' sto [ref, up reg]
+
+
+unify' :: Storage -> [Int] -> Storage
+unify' (st, cod, env, reg, tr, us) [] =
+  let reg' = reg {sc = arity $ elemAt st $ up reg}
+  in skip (st, cod, env, reg', tr, us)
+
+unify' sto@(st, cod, env, reg, tr, us) (add1 : add2 : t) =
+  let d1 = deref st add1
+      d2 = deref st add2
+  in if d1 /= d2
+        then
+          case (elemAt st d1, elemAt st d2) of
+            (VAR v _, _) ->
+              let st' = replace st d1 $ VAR v d2
+                  tr' = d1 : tr
+              in unify' (st', cod, env, reg, tr', us) t
+            (_, VAR v _) ->
+              let st' = replace st d2 $ VAR v d1
+                  tr' = d2 : tr
+              in unify' (st', cod, env, reg, tr', us) t
+            (STR sym1 ar1, STR sym2 ar2) ->
+              if sym1 /= sym2 || ar1 /= ar2
+                 then let reg' = reg {b = True,
+                                      sc = arity $ elemAt st $ up reg}
+                      in updateReg (st, cod, env, reg', tr, us) 0
+                 else let adds = pushAdds t d1 d2 1 ar1
+                      in unify' (st, cod, env, reg, tr, us) adds
+        else unify' sto t where
+
+  pushAdds :: [Int] -> Int -> Int -> Int -> Int -> [Int]
+  pushAdds adds d1 d2 i ar
+    | i <= ar = pushAdds (d1 + i : d2 + i : adds) d1 d2 (i + 1) ar
+    | otherwise = adds
+
+
+skip :: Storage -> Storage
+skip sto@(st, cod, env, reg, tr, us)
+  | sc reg >= 1 =
+    let ar = arity $ elemAt st $ up reg
+        reg' = reg {up = up reg + 1,
+                    sc = sc reg - 1 + ar}
+    in skip (st, cod, env, reg', tr, us)
+  | otherwise = updateReg sto 0
 
 
 --      varname   push?   stack    register    pos in env
