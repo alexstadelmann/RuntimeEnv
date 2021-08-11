@@ -42,9 +42,8 @@ showSolution = showSolution' "" where
   
   showSolution' :: String -> Stack -> String
   showSolution' acc [] = acc
-  showSolution' acc ((STR s):(NUM 1):t) =showSolution' (spaces t ++ "not " ++ s ++ "\n" ++ spaces t ++"  proof of " ++ s ++ " fails." ++ ('\n':acc)) t
-  showSolution' acc ((STR s):(NUM (-1)):t) =showSolution' (spaces t ++ "not " ++ s ++ "\n" ++ spaces t ++"  proof of " ++ s ++ " fails." ++ ('\n':acc)) t
   showSolution' acc ((STR s):(NUM 0):t) =showSolution' (spaces t ++ s ++ ('\n':acc)) t
+  showSolution' acc ((STR s):(NUM _):t) =showSolution' (spaces t ++ "not " ++ s ++ "\n" ++ spaces t ++"  proof of " ++ s ++ " fails." ++ ('\n':acc)) t
   showSolution' acc (_:t) = showSolution' acc t
   
   spaces :: Stack -> String

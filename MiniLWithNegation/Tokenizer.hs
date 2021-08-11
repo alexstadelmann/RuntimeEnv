@@ -10,44 +10,50 @@ import Data.Char
 import Declarations
 
 
-tokenize:: String -> [Symbol]
+tokenize:: String -> [(Symbol,Int)]  --
 tokenize "" = []
-tokenize xs =  tokenize' (filter (\a -> a `notElem` [' ', '\n', '\r']) xs) "" []
+tokenize xs =  tokenize' (filter (\a -> a `notElem` [' ', '\r']) xs) "" 1 []
 
+-- tokenize's parameters are: the input string, a word accumulator, a line counter and a result accumulator. 
+tokenize' :: String -> String -> Int -> [(Symbol,Int)] -> [(Symbol,Int)]
 
-tokenize' :: String -> String -> [Symbol] -> [Symbol]
+-- no next character:
+tokenize' "" "" _ listacc = reverse listacc --
 
--- kein nächstes Zeichen:
-tokenize' "" "" listacc = reverse listacc
+tokenize' "" symbolacc lineacc listacc --
+  | isUpper $ last symbolacc = reverse $ (Variable $ reverse symbolacc, lineacc):listacc
+  | otherwise = reverse $ (Name $ reverse symbolacc, lineacc):listacc
 
-tokenize' "" symbolacc listacc
-  | isUpper $ last symbolacc = reverse $ (Variable $ reverse symbolacc):listacc
-  | otherwise = reverse $ (Name $ reverse symbolacc):listacc
+-- next three characters form "not":
+tokenize' ('n':'o':'t':xs) "" lineacc listacc = tokenize' xs "" lineacc $ (Not, lineacc):listacc
 
--- nächste drei Zeichen "not":
-tokenize' ('n':'o':'t':xs) "" listacc = tokenize' xs "" $ Not:listacc
+-- next two characters form ":-":
+tokenize' (':':'-':xs) "" lineacc listacc = tokenize' xs "" lineacc $ (If, lineacc):listacc
+tokenize' xxs@(':':'-':xs) symbolacc lineacc listacc 
+  | isUpper $ last symbolacc = tokenize' xxs "" lineacc $ (Variable $ reverse symbolacc, lineacc):listacc
+  | otherwise = tokenize' xxs "" lineacc $ (Name $ reverse symbolacc, lineacc):listacc
 
--- nächste zwei Zeichen ":-"
-tokenize' (':':'-':xs) "" listacc = tokenize' xs "" $ If:listacc
-tokenize' xxs@(':':'-':xs) symbolacc listacc
-  | isUpper $ last symbolacc = tokenize' xxs "" $ (Variable $ reverse symbolacc):listacc
-  | otherwise = tokenize' xxs "" $ (Name $ reverse symbolacc):listacc
+-- next character is a Point, And, LBracket or RBracket:
+tokenize' (x:xs) "" lineacc listacc
+  | x == '.' = tokenize' xs "" lineacc $ (Point, lineacc):listacc
+  | x == ',' = tokenize' xs "" lineacc $ (And, lineacc):listacc
+  | x == '(' = tokenize' xs "" lineacc $ (LBracket, lineacc):listacc
+  | x == ')' = tokenize' xs "" lineacc $ (RBracket, lineacc):listacc
+  | x == '\n' =
+     let listacc' = case listacc of             -- each '\n'-character increments the line counter by one. A NewLine-Token is added.
+                         (NewLine,_):t -> listacc
+                         _ -> (NewLine, lineacc) : listacc
+     in tokenize' xs "" (lineacc + 1) listacc'
 
--- nächstes Zeichen Point, And, LBracket oder RBracket
-tokenize' (x:xs) "" listacc
-  | x == '.' = tokenize' xs "" $ Point:listacc
-  | x == ',' = tokenize' xs "" $ And:listacc
-  | x == '(' = tokenize' xs "" $ LBracket:listacc
-  | x == ')' = tokenize' xs "" $ RBracket:listacc
-
-tokenize' (x:xs) symbolacc listacc
-  | not $ isValid x = error $ "unerlaubes Zeichen: " ++ show x
-  | x == '.' || x == ',' || x == '(' || x == ')' =
+tokenize' (x:xs) symbolacc lineacc listacc
+  | not $ isValid x = error $ "Invalid character: " ++ show x ++ " on line " ++ show(lineacc)
+  | x == '.' || x == ',' || x == '(' || x == ')' || x == '\n' = 
     if isUpper $ last symbolacc
-       then tokenize' (x:xs) "" $ (Variable $ reverse symbolacc):listacc
-       else tokenize' (x:xs) "" $ (Name $ reverse symbolacc):listacc
-  | otherwise = tokenize' xs (x:symbolacc) listacc
+       then tokenize' (x:xs) "" lineacc $ (Variable $ reverse symbolacc, lineacc):listacc
+       else tokenize' (x:xs) "" lineacc $ (Name $ reverse symbolacc, lineacc):listacc
+  | otherwise = tokenize' xs (x:symbolacc) lineacc listacc
 
 
+-- test if character is accepted.
 isValid:: Char -> Bool
 isValid x = isAlphaNum x || x == '(' || x == ')'|| x == ',' ||x== '.' || x==' ' || x=='\n' || x=='\r'
