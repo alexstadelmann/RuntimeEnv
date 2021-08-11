@@ -15,14 +15,12 @@ import Declarations
 
 translate :: SyntaxTree -> Code
 translate (SyntaxTree cs (varseq, g)) =
-  concatMap translate' cs ++ Push BegEnv : transEnv varseq
+  concatMap translate' cs ++ transEnv varseq
   ++ transBody g ++ [Backtrack, Prompt] where
 
   translate' :: (VarSeq, PClause) -> Code
   translate' (varSeq, PClause nvlt g) =
-    Push BegEnv : transEnv varSeq
-    ++ transHead nvlt ++ transBody g ++ [Return]
-
+    transEnv varSeq ++ transHead nvlt ++ transBody g ++ [Return]
 
 transHead :: NVLTerm -> Code
 transHead nvlt = concatMap transHead' $ linLTerm $ NVar nvlt
@@ -41,7 +39,7 @@ transBody = concatMap transBody' where
 
 transEnv :: VarSeq -> Code
 transEnv v =
-  foldl (\xs x -> Push (VAR' x) : xs) [Push $ EndEnv $ Set.size v] v
+  foldl (\xs x -> Push (VAR' x) : xs) [Push $ EndEnv' $ Set.size v] v
 
 
 linLTerm :: LTerm -> [Arg]
@@ -54,8 +52,8 @@ createEnv :: Code -> Env
 createEnv = createEnv' [] 0 where
 
   createEnv' :: [Int] -> Int -> Code -> Env
-  createEnv' cs i (Push BegEnv : t) =
-    createEnv' (i : cs) (i + 1) t
+  createEnv' cs i (Return : _ : t) =
+    createEnv' ((i + 1) : cs) (i + 2) t
   createEnv' (h : t) i (Prompt : _) =
     Env {clauses = reverse t, cGoal = h, cLast = i}
   createEnv' cs i (_ : t) =
