@@ -42,12 +42,12 @@ execute Backtrack = backtrack
 push :: Arg -> Storage -> Storage
 push CHP (st, cod, env, reg, tr, us) =
   let st' = NUM (l reg)
-             : NUM (tt reg)
-             : NUM (e reg)
-             : NUM retAdd
-             : NUM (c reg)
-             : NUM (cFirst env)
-             : st
+          : NUM (length tr - 1)
+          : NUM (e reg)
+          : NUM retAdd
+          : NUM (c reg)
+          : NUM (cFirst env)
+          : st
       retAdd = getRetAdd cod $ p reg + 3
       reg' = reg {c = length st,
                   r = length st + 1,
@@ -72,13 +72,14 @@ push (STR' s i) (st, cod, env, reg, tr, us) =
   in (st', cod, env, reg', tr, us)
 
 push (VAR' s) (st, cod, env, reg, tr, us) =
-  let st' = VAR s (s_add s True) : st
+  let st' = VAR s (sAdd s True st reg) : st
       reg' = reg {p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
 push (EndEnv' n) (st, cod, env, reg, tr, us) =
   let st' = EndEnv : st
-      reg' = reg {e = length st - 1 - n, p = p reg + 1}
+      reg' = reg {e = length st - 1 - n,
+                  p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
 
@@ -137,24 +138,31 @@ backtrack stor@(st, cod, env, reg, tr, us)
                               ut = 0,
                               pc = 0,
                               ac = -1}
-                  (st'', tr')
-              in (st', cod, env, reg', tr, us)
-
+                  (st'', tr') = unbind st' reg tr
+              in (st'', cod, env, reg', tr, us)
   | otherwise = let reg' = reg {p = p reg + 1}
                 in (st, cod, env, reg', tr, us)
 
-undoBindings :: Stack -> Register -> Trail -> (Stack, Trail)
-undoBindings = undoBindings' $ numAt st (c reg + 4) + 1
 
-undoBindings' :: Int -> Stack -> Register -> Trail -> (Stack, Trail)
-undoBindings' i st reg tr =
-    | i > tt = (st, tr)
+unbind :: Stack -> Register -> Trail -> (Stack, Trail)
+unbind st reg = unbind' (numAt st (c reg + 4) + 1) st where
+  
+  unbind' :: Int -> Stack -> Trail -> (Stack, Trail)
+  unbind' i st tr@(h : t)
+    | i > length t = (st, tr)
     | otherwise =
-      if tr !! i <= length st - 1
-        then let VAR s _ = elemAt st (tr !! i) in replace st (tr !! i) (VAR s (-1))
+      if h < length st
+         then let VAR s _ = elemAt st h
+                  st' = replace st h $ VAR s $ -1
+              in unbind' (i + 1) st' t
+         else unbind' (i + 1) st t
 
-replace :: Stack -> Int -> StackElem -> Stack
-replace = undefined
+
+replace :: [a] -> Int -> a -> [a]
+replace xs pos x =
+  let i = length xs - pos - 1
+  in take i xs ++ x : drop (i + 1) xs
+
 
 elemAt :: Stack -> Int -> StackElem
 elemAt st i = st !! (length st - i - 1)
@@ -170,10 +178,20 @@ numAt st i =
 setCNext :: Storage -> Stack
 setCNext (st, _, env, reg, _, _) =
   let cNew = NUM $ cNext env $ numAt st $ c reg
-      pos = length st - (c reg) - 1
-  in take pos st ++ cNew : drop (pos + 1) st
+  in replace st (c reg) cNew
 
---true = push, false = unify
-s_add :: String -> Bool -> Int
-s_add =
-
+--      varname   push?   stack    register    pos in env
+sAdd :: String -> Bool -> Stack -> Register -> Int
+sAdd sym pushmode st reg
+  | pushmode =
+    if c reg < 0
+       then -1
+       else sAdd' sym st reg $ numAt st $ c reg + 3
+  | otherwise = sAdd' sym st reg $ e reg where
+  
+  sAdd' :: String -> Stack -> Register -> Int -> Int
+  sAdd' sym st reg i =
+    let VAR sym' add = elemAt st i
+    in if sym == sym'
+          then i
+          else sAdd' sym st reg $ i + 1

@@ -27,7 +27,6 @@ main = do
                  l = 0,
                  up = 0,
                  ut = 0,
-                 tt = 0,
                  pc = 0,
                  sc = 0,
                  ac = -1}

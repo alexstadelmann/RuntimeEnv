@@ -7,6 +7,8 @@ module Declarations
   Arg(..),
   Command(..),
   Register(..),
+  Trail,
+  US,
   Symbol(..),
   SyntaxTree(..),
   PClause(..),
@@ -70,7 +72,6 @@ data Register = Reg {b :: Bool, -- backtrack flag
                      e :: Int, -- local environment
                      up :: Int, -- unification pointer
                      ut :: Int, -- top of US
-                     tt :: Int, -- top of Trail
                      pc :: Int, -- push counter
                      sc :: Int, -- skip counter
                      ac :: Int} -- argument counter
