@@ -7,26 +7,26 @@ module MiniL
 
 import Declarations
 import MiniTranslator
---import Debug.Trace
+import Debug.Trace
 
 
-evaluate :: Storage -> Storage
-evaluate stor@(_, pcode, _, reg) =
-  case pcode !! (p reg) of
-       Prompt -> stor
-       command -> evaluate $ execute command stor
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(_, pcode, _, reg) =
+--   case pcode !! (p reg) of
+--        Prompt -> stor
+--        command -> evaluate $ execute command stor
 
 
 -- use this version of evaluate for debugging purposes:
 
--- evaluate :: Storage -> Storage
--- evaluate stor@(stack, pcode, env, reg)
---   | trace ((show stack) ++ "   " ++ (show reg) ++ "   " 
---     ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
---   | otherwise =
---     case pcode !! (p reg) of
---          Prompt -> stor
---          command -> evaluate $ execute command stor
+evaluate :: Storage -> Storage
+evaluate stor@(stack, pcode, env, reg)
+  | trace ((show stack) ++ "   " ++ (show reg) ++ "   " 
+    ++ (show $ pcode !! (p reg)) ++ "\n") False = undefined
+  | otherwise =
+    case pcode !! (p reg) of
+         Prompt -> stor
+         command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
@@ -98,30 +98,30 @@ returnL stor@(stack, pcode, env, reg)
 
 
 backtrack :: Storage -> Storage
-backtrack stor@(stack, pcode, env, reg) =
-  case (b reg, numAt stack (r reg + 3), numAt stack (c reg),  numAt stack (r reg), pcode !! (p reg - 1)) of
-    (True, 1, -1, _, Unify s) ->  let reg' = reg{p = numAt stack (r reg + 1), -- negative atom "successfully" failed, that is the resolution (of its negation) with all clause-heads failed.
-                                                 b = False,
-                                                 l = l reg - 1}
-                                      stack' = setNProven stor
-                                  in (stack', pcode, env, reg')
+backtrack stor@(stack, pcode, env, reg) 
+  | b reg = 
+    case (numAt stack (r reg + 3), numAt stack (c reg),  numAt stack (r reg), pcode !! (p reg - 1)) of
+      (1, -1, _, Unify s) ->  let reg' = reg{p = numAt stack (r reg + 1), -- negative atom "successfully" failed, that is the resolution (of its negation) with all clause-heads failed.
+                                             b = False,
+                                             l = l reg - 1}
+                                  stack' = setNProven stor
+                              in (stack', pcode, env, reg')
 
-    (True, _, -1, -1, _) -> let reg' = reg {p = cLast env}
-                            in (stack, pcode, env, reg')
+      (_, -1, -1, _) -> let reg' = reg {p = cLast env}
+                        in (stack, pcode, env, reg')
 
-    (True, _, -1, _, _) ->  let newC = numAt stack $ r reg
-                                reg' = reg {c = newC,
-                                          r = newC + 1}
-                                stack' = drop (length stack - newC - 6) stack
-                            in backtrack (stack', pcode, env, reg')
+      (_, -1, _, _) ->  let newC = numAt stack $ r reg
+                            reg' = reg {c = newC,
+                                        r = newC + 1}
+                            stack' = drop (length stack - newC - 6) stack
+                        in backtrack (stack', pcode, env, reg')
 
-    (True, _, _, _, _) -> let stack' = setCNext stor
-                              reg' = reg {p = numAt stack $ c reg,
-                                          b = False}
-                          in (stack', pcode, env, reg') 
-
-    _ ->  let reg' = reg {p = p reg + 1}
-          in (stack, pcode, env, reg')
+      _ -> let stack' = setCNext stor
+               reg' = reg {p = numAt stack $ c reg,
+                           b = False}
+           in (stack', pcode, env, reg') 
+  | otherwise = let reg' = reg {p = p reg + 1}
+                in (stack, pcode, env, reg')
 
 
 elemAt :: Stack -> Int -> StackElem
