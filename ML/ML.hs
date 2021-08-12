@@ -82,51 +82,6 @@ push (EndEnv' n) (st, cod, env, reg, tr, us) =
   in (st', cod, env, reg', tr, us)
 
 
-unify :: Arg -> Storage -> Storage
-unify a (st, cod, env, reg, tr, us)
-  | not $ b reg =
-    let reg' = reg {p = p reg + 1,
-                    l = numAt st (c reg + 3) + 1,
-                    up = up reg + 1}
-    in (st, cod, env, reg', tr, us)
-  | otherwise =
-    let reg' = reg {p = p reg + 1}
-    in (st, cod, env, reg', tr, us)
-
-deref :: Stack -> Int -> Int
-deref st i =
-  case elemAt st i of
-    STR _ _ -> i
-    VAR _ i2 -> if i2 == -1
-                then i
-                else deref st i2
-
-arity :: StackElem -> Int
-arity (VAR _ _) = 0
-arity (STR _ ar) = ar
-
-add_AC :: Register -> Int -> Int
-add_AC reg n
-  | ac reg /= -1 = ac reg + n
-  | otherwise = ac reg
-
-restore_ac_up :: US -> Register -> (US, Register)
-restore_ac_up us@(h1 : h2 : t) reg
-  | ac reg == 0 =
-    let reg' = reg {ac = h2,
-                    up = h1}
-    in (t, reg')
-  | otherwise = (us, reg)
-
-save_ac_up :: US -> Register -> Stack -> (US, Register)
-save_ac_up us reg st
-  | up reg <= numAt st (c reg + 5) && deref st (up reg) /= up reg && arity (elemAt st (deref st (up reg))) /= 0 =
-    let reg' = reg {up = deref st (up reg), ac = 1 }
-        us' = up reg : ac reg : us
-    in (us', reg')
-  | otherwise = (us, reg)
-
-
 call :: Storage -> Storage
 call stor@(st, cod, env, reg, tr, us)
   | numAt st (c reg) < 0 =
@@ -172,11 +127,10 @@ backtrack stor@(st, cod, env, reg, tr, us)
                   (st'', tr') = unbind st' reg tr
               in (st'', cod, env, reg', tr, [])
   | otherwise = let reg' = reg {p = p reg + 1}
-                in (st, cod, env, reg', tr, us)
+                in (st, cod, env, reg', tr, us) where
 
-
-unbind :: Stack -> Register -> Trail -> (Stack, Trail)
-unbind st reg = unbind' (numAt st (c reg + 4) + 1) st where
+  unbind :: Stack -> Register -> Trail -> (Stack, Trail)
+  unbind st reg = unbind' (numAt st (c reg + 4) + 1) st
 
   unbind' :: Int -> Stack -> Trail -> (Stack, Trail)
   unbind' i st tr@(h : t)
@@ -187,6 +141,156 @@ unbind st reg = unbind' (numAt st (c reg + 4) + 1) st where
                   st' = replace st h $ VAR s $ -1
               in unbind' (i + 1) st' t
          else unbind' (i + 1) st t
+
+
+unify :: Arg -> Storage -> Storage
+unify (STR' sym ar) (st, cod, env, reg, tr, us)
+  | pc reg >= 1 =
+    let reg' = reg {pc = pc reg - 1 + ar,
+                    p = p reg + 1}
+        st' = STR sym ar : st
+    in (st', cod, env, reg', tr, us)
+  | otherwise =
+    case elemAt st $ deref st $ up reg of
+         VAR sym' _ ->
+           let ref = deref st $ up reg
+               reg' = reg {pc = ar}
+               tr' = ref : tr
+               st' = replace st ref $ VAR sym' $ length st
+               st'' = STR sym ar : st'
+           in updateReg (st'', cod, env, reg', tr', us) 0
+         STR sym' ar' ->
+           if sym /= sym' || ar /= ar'
+              then let reg' = reg {b = True,
+                                   p = p reg + 1}
+                   in (st, cod, env, reg', tr, us)
+              else let (us', reg') = save_AC_UP us reg st
+                   in updateReg (st, cod, env, reg', tr, us') ar
+
+unify (VAR' sym) sto@(st, cod, env, reg, tr, us)
+  | pc reg >= 1 =
+    let reg' = reg {pc = pc reg - 1,
+                    p = p reg + 1}
+        st' = VAR sym (sAdd sym False st reg) : st
+    in (st', cod, env, reg', tr, us)
+  | otherwise =
+    let ref = deref st $ sAdd sym False st reg
+    in case elemAt st ref of
+            VAR sym' _ ->
+              let st' = replace st ref $ VAR sym' $ up reg
+                  tr' = sAdd sym False st' reg : tr
+                  reg' = reg {sc = arity $ elemAt st' $ up reg}
+              in skip (st', cod, env, reg', tr', us)
+            STR sym' ar -> unify' sto [ref, up reg]
+
+
+unify' :: Storage -> [Int] -> Storage
+unify' (st, cod, env, reg, tr, us) [] =
+  let reg' = reg {sc = arity $ elemAt st $ up reg}
+  in skip (st, cod, env, reg', tr, us)
+
+unify' sto@(st, cod, env, reg, tr, us) (add1 : add2 : t) =
+  let d1 = deref st add1
+      d2 = deref st add2
+  in if d1 /= d2
+        then
+          case (elemAt st d1, elemAt st d2) of
+            (VAR v _, _) ->
+              let st' = replace st d1 $ VAR v d2
+                  tr' = d1 : tr
+              in unify' (st', cod, env, reg, tr', us) t
+            (_, VAR v _) ->
+              let st' = replace st d2 $ VAR v d1
+                  tr' = d2 : tr
+              in unify' (st', cod, env, reg, tr', us) t
+            (STR sym1 ar1, STR sym2 ar2) ->
+              if sym1 /= sym2 || ar1 /= ar2
+                 then let reg' = reg {b = True,
+                                      sc = arity $ elemAt st $ up reg}
+                      in updateReg (st, cod, env, reg', tr, us) 0
+                 else let adds = pushAdds t d1 d2 1 ar1
+                      in unify' (st, cod, env, reg, tr, us) adds
+        else unify' sto t where
+
+  pushAdds :: [Int] -> Int -> Int -> Int -> Int -> [Int]
+  pushAdds adds d1 d2 i ar
+    | i <= ar = pushAdds (d1 + i : d2 + i : adds) d1 d2 (i + 1) ar
+    | otherwise = adds
+
+
+skip :: Storage -> Storage
+skip sto@(st, cod, env, reg, tr, us)
+  | sc reg >= 1 =
+    let ar = arity $ elemAt st $ up reg
+        reg' = reg {up = up reg + 1,
+                    sc = sc reg - 1 + ar}
+    in skip (st, cod, env, reg', tr, us)
+  | otherwise = updateReg sto 0
+
+
+--      varname   push?   stack    register    pos in env
+sAdd :: String -> Bool -> Stack -> Register -> Int
+sAdd sym pushmode st reg
+  | pushmode =
+    if c reg < 0
+       then -1
+       else sAdd' sym st $ numAt st $ c reg + 3
+  | otherwise = sAdd' sym st $ e reg where
+
+  sAdd' :: String -> Stack -> Int -> Int
+  sAdd' sym st i =
+    let VAR sym' _ = elemAt st i
+    in if sym == sym'
+          then i
+          else sAdd' sym st $ i + 1
+
+
+deref :: Stack -> Int -> Int
+deref st add =
+  case elemAt st add of
+    STR _ _ -> add
+    VAR _ add' -> if add' == -1
+                then add
+                else deref st add'
+
+
+arity :: StackElem -> Int
+arity (VAR _ _) = 0
+arity (STR _ ar) = ar
+
+
+updateReg :: Storage -> Int -> Storage
+updateReg (st, cod, env, reg, tr, us) i =
+  let (us', reg') = restore_AC_UP us $ add_AC reg $ i - 1
+      reg'' = reg' {up = up reg' + 1,
+                    p = p reg' + 1}
+  in (st, cod, env, reg'', tr, us')
+
+
+add_AC :: Register -> Int -> Register
+add_AC reg n
+  | ac reg /= -1 = reg {ac = ac reg + n}
+  | otherwise = reg {ac = ac reg}
+
+
+restore_AC_UP :: US -> Register -> (US, Register)
+restore_AC_UP us@(h1 : h2 : t) reg
+  | ac reg == 0 =
+    let reg' = reg {ac = h2,
+                    up = h1}
+    in (t, reg')
+  | otherwise = (us, reg)
+
+
+save_AC_UP :: US -> Register -> Stack -> (US, Register)
+save_AC_UP us reg st
+  | up reg <= numAt st (c reg + 5)
+  && deref st (up reg) /= up reg
+  && arity (elemAt st (deref st (up reg))) /= 0 =
+    let reg' = reg {up = deref st (up reg), ac = 1 }
+        us' = up reg : ac reg : us
+    in (us', reg')
+  | otherwise = (us, reg)
 
 
 replace :: [a] -> Int -> a -> [a]
@@ -210,19 +314,3 @@ setCNext :: Storage -> Stack
 setCNext (st, _, env, reg, _, _) =
   let cNew = NUM $ cNext env $ numAt st $ c reg
   in replace st (c reg) cNew
-
---      varname   push?   stack    register    pos in env
-sAdd :: String -> Bool -> Stack -> Register -> Int
-sAdd sym pushmode st reg
-  | pushmode =
-    if c reg < 0
-       then -1
-       else sAdd' sym st reg $ numAt st $ c reg + 3
-  | otherwise = sAdd' sym st reg $ e reg where
-
-  sAdd' :: String -> Stack -> Register -> Int -> Int
-  sAdd' sym st reg i =
-    let VAR sym' _ = elemAt st i
-    in if sym == sym'
-          then i
-          else sAdd' sym st reg $ i + 1
