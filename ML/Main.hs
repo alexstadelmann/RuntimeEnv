@@ -41,6 +41,7 @@ nextSolution s = do
   if b reg
      then putStrLn "No (more) solutions"
      else do putStrLn $ showSolution $ reverse st
+             putStrLn $ showVars $ reverse st
              wantMore result
 
 
@@ -51,6 +52,17 @@ showSolution (NUM n : t@(STR _ _ : _)) =
 showSolution [] = ""
 showSolution (_ : t) = showSolution t
 
+showVars :: Stack -> String
+showVars stack@((VAR s a):t) = displayTerm (deref stack a) stack ++ " / " ++ s ++ "\n" ++ showVars t
+showVars [] = ""
+showVars (_: t) = showVars t 
+
+displayTerm :: Int -> Stack -> String
+displayTerm i stack = 
+  case elemAt stack i of
+    (VAR s (-1)) -> s
+    (STR s 0) -> s
+    (STR s a) -> fst (display "" (drop i stack)) 
 
 display :: String -> Stack -> (String, Stack)
 display acc (STR s i : t)

@@ -1,7 +1,9 @@
 module ML
 (
   evaluate,
-  numAt
+  numAt,
+  elemAt,
+  deref
 )
   where
 
