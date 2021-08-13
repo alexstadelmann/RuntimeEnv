@@ -38,12 +38,13 @@ transBody = concatMap transBody' where
 
 
 transEnv :: VarSeq -> Code
-transEnv v =
-  foldl (\xs x -> Push (VAR' x) : xs) [Push $ EndEnv' $ Set.size v] v
+transEnv v = foldl (\xs x -> Push (VAR' x True) : xs)
+                   [Push $ EndEnv' $ Set.size v]
+                   $ Set.toDescList v
 
 
 linLTerm :: LTerm -> [Arg]
-linLTerm (Var s) = [VAR' s]
+linLTerm (Var s) = [VAR' s False]
 linLTerm (NVar (NVLTerm a xs)) =
   STR' a (length xs) : concatMap linLTerm xs
 

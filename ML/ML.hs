@@ -73,8 +73,11 @@ push (STR' s i) (st, cod, env, reg, tr, us) =
       reg' = reg {p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
-push (VAR' s) (st, cod, env, reg, tr, us) =
-  let st' = VAR s (sAdd s True st reg) : st
+push (VAR' s inEnv) (st, cod, env, reg, tr, us) =
+  let ref = if inEnv
+               then -1
+               else sAdd s True st reg
+      st' = VAR s ref : st
       reg' = reg {p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
@@ -99,7 +102,7 @@ call stor@(st, cod, env, reg, tr, us)
 
 returnL :: Storage -> Storage
 returnL (st, cod, env, reg, tr, us)
-  | numAt st (r reg + 2) /= l reg - 1 =
+  | numAt st (r reg + 4) /= l reg - 1 =
     let reg' = reg {r = numAt st (r reg) + 1}
     in returnL (st, cod, env, reg', tr, us)
   | otherwise =
@@ -171,7 +174,7 @@ unify (STR' sym ar) (st, cod, env, reg, tr, us)
               else let (us', reg') = save_AC_UP us reg st
                    in updateReg (st, cod, env, reg', tr, us') ar
 
-unify (VAR' sym) sto@(st, cod, env, reg, tr, us)
+unify (VAR' sym _) sto@(st, cod, env, reg, tr, us)
   | pc reg >= 1 =
     let reg' = reg {pc = pc reg - 1,
                     l = numAt st (c reg + 5) + 1,

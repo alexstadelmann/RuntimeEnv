@@ -52,7 +52,8 @@ data Command = Push Arg
 
 
 data Arg = STR' String Int
-         | VAR' String
+         -- Bool indicates whether variable is part of local env:
+         | VAR' String Bool
          | CHP
          | EndEnv' Int
   deriving (Show, Eq)
