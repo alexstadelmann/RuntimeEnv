@@ -22,9 +22,10 @@ evaluate stor@(_, cod, _, reg, _, _) =
 -- use this version of evaluate for debugging purposes:
 
 -- evaluate :: Storage -> Storage
--- evaluate stor@(st, cod, _, reg, _, _)
---   | trace ((show st) ++ "   " ++ (show reg) ++ "   "
---     ++ (show $ cod !! (p reg)) ++ "\n") False = undefined
+-- evaluate stor@(st, cod, _, reg, tr, us)
+--   | trace (show st ++ "   " ++ show reg ++ "   " ++ show tr ++ "   "
+--     ++ show us ++ "   " ++ show (cod !! (p reg)) ++ "\n")
+--     False = undefined
 --   | otherwise =
 --     case cod !! (p reg) of
 --          Prompt -> stor
@@ -42,7 +43,7 @@ execute Backtrack = backtrack
 push :: Arg -> Storage -> Storage
 push CHP (st, cod, env, reg, tr, us) =
   let st' = NUM (l reg)
-          : NUM (length tr - 1)
+          : NUM (length tr)
           : NUM (e reg)
           : NUM retAdd
           : NUM (c reg)
@@ -77,7 +78,7 @@ push (VAR' s) (st, cod, env, reg, tr, us) =
 
 push (EndEnv' n) (st, cod, env, reg, tr, us) =
   let st' = EndEnv : st
-      reg' = reg {e = length st - 1 - n,
+      reg' = reg {e = length st - n,
                   p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 

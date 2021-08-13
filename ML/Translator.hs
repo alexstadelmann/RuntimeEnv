@@ -49,7 +49,7 @@ linLTerm (NVar (NVLTerm a xs)) =
 
 
 createEnv :: Code -> Env
-createEnv = createEnv' [] 0 where
+createEnv = createEnv' [0] 0 where
 
   createEnv' :: [Int] -> Int -> Code -> Env
   createEnv' cs i (Return : _ : t) =
