@@ -40,8 +40,10 @@ nextSolution s = do
       (st, cod, env, reg, tr, us) = result
   if b reg
      then putStrLn "No (more) solutions"
-     else do putStrLn $ showSolution $ reverse st
-             putStrLn $ showVars $ reverse st
+     else do putStrLn "Prooftree: "
+             putStrLn $ (showSolution $ reverse st )
+             putStrLn "Substitutions: "
+             putStrLn $ showVars st (reverse st)
              wantMore result
 
 
@@ -49,32 +51,39 @@ showSolution :: Stack -> String
 showSolution (NUM n : t@(STR _ _ : _)) =
   let result = display "" t
   in spaces n ++ fst result ++ "\n" ++ showSolution (snd result)
+showSolution(NUM n : t@(VAR _ _:_)) =
+  let result = display "" t
+  in spaces n ++ fst result ++ "\n" ++ showSolution (snd result)
 showSolution [] = ""
 showSolution (_ : t) = showSolution t
 
-showVars :: Stack -> String
-showVars stack@((VAR s a):t) = displayTerm (deref stack a) stack ++ " / " ++ s ++ "\n" ++ showVars t
-showVars [] = ""
-showVars (_: t) = showVars t 
+
+
+showVars :: Stack -> Stack -> String
+showVars st ((VAR s (-1):t)) = s ++ "/" ++ s ++ "\n" ++ showVars st t 
+showVars st ((VAR s a):t) = displayTerm (deref st a) st ++ "/" ++ s ++ "\n" ++ showVars st t
+showVars st ((EndEnv):t) = ""
+showVars st (_: t) = showVars st t 
 
 displayTerm :: Int -> Stack -> String
-displayTerm i stack = 
-  case elemAt stack i of
+displayTerm i st = 
+  case elemAt st i of
     (VAR s (-1)) -> s
     (STR s 0) -> s
-    (STR s a) -> fst (display "" (drop i stack)) 
+    (STR s a) -> fst (display "" (drop i (reverse st)) )
 
 display :: String -> Stack -> (String, Stack)
 display acc (STR s i : t)
   | i > 0 = display' (acc ++ s ++ "(") t $ i - 1
-  | otherwise = (acc ++ s, t) where
+  | otherwise = (acc ++ s, t)
+display acc (VAR s _ : t) = (acc ++ s, t)
 
-  display' :: String -> Stack -> Int -> (String, Stack)
-  display' acc st i
-    | i > 0 = let result = display acc st
-              in display' (fst result ++ ", ") (snd result) $ i - 1
-    | otherwise = let result = display acc st
-                  in (fst result ++ ")", snd result)
+display' :: String -> Stack -> Int -> (String, Stack)
+display' acc st i
+  | i > 0 = let result = display acc st
+            in display' (fst result ++ ", ") (snd result) $ i - 1
+  | otherwise = let result = display acc st
+                in (fst result ++ ")", snd result)
 
 
 spaces :: Int -> String
