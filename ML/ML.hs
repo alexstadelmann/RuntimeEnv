@@ -276,7 +276,7 @@ updateReg (st, cod, env, reg, tr, us) i =
 add_AC :: Register -> Int -> Register
 add_AC reg n
   | ac reg /= -1 = reg {ac = ac reg + n}
-  | otherwise = reg {ac = ac reg}
+  | otherwise = reg
 
 
 restore_AC_UP :: US -> Register -> (US, Register)
@@ -286,12 +286,12 @@ restore_AC_UP us@(h1 : h2 : t) reg
                     up = h1}
     in (t, reg')
   | otherwise = (us, reg)
+restore_AC_UP us reg = (us, reg)
 
 
 save_AC_UP :: US -> Register -> Stack -> (US, Register)
 save_AC_UP us reg st
-  | up reg <= numAt st (c reg + 5)
-  && deref st (up reg) /= up reg
+  | deref st (up reg) /= up reg
   && arity (elemAt st (deref st (up reg))) /= 0 =
     let reg' = reg {up = deref st (up reg), ac = 1 }
         us' = up reg : ac reg : us
