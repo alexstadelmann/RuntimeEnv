@@ -147,6 +147,7 @@ unify :: Arg -> Storage -> Storage
 unify (STR' sym ar) (st, cod, env, reg, tr, us)
   | pc reg >= 1 =
     let reg' = reg {pc = pc reg - 1 + ar,
+                    l = numAt st (c reg + 5) + 1,
                     p = p reg + 1}
         st' = STR sym ar : st
     in (st', cod, env, reg', tr, us)
@@ -170,6 +171,7 @@ unify (STR' sym ar) (st, cod, env, reg, tr, us)
 unify (VAR' sym) sto@(st, cod, env, reg, tr, us)
   | pc reg >= 1 =
     let reg' = reg {pc = pc reg - 1,
+                    l = numAt st (c reg + 5) + 1,
                     p = p reg + 1}
         st' = VAR sym (sAdd sym False st reg) : st
     in (st', cod, env, reg', tr, us)
@@ -263,6 +265,7 @@ updateReg :: Storage -> Int -> Storage
 updateReg (st, cod, env, reg, tr, us) i =
   let (us', reg') = restore_AC_UP us $ add_AC reg $ i - 1
       reg'' = reg' {up = up reg' + 1,
+                    l = numAt st (c reg + 5) + 1,
                     p = p reg' + 1}
   in (st, cod, env, reg'', tr, us')
 
