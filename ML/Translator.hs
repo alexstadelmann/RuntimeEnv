@@ -2,8 +2,7 @@ module Translator
 (
   translate,
   createEnv,
-  cNext,
-  cFirst
+  cNext
 )
   where
 
@@ -69,8 +68,3 @@ cNext env = cNext' (clauses env) where
   cNext' (h : t) i
     | h <= i = cNext' t i
     | otherwise = h
-
-
-cFirst :: Env -> Int
-cFirst Env {clauses = []} = -1
-cFirst _ = 0
