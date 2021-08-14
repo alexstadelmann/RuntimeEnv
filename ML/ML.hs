@@ -147,6 +147,7 @@ backtrack stor@(st, cod, env, reg, tr, us)
                   st' = replace st h $ VAR s $ -1
               in unbind' (i + 1) st' t
          else unbind' (i + 1) st t
+  unbind' _ st tr = (st, tr)
 
 
 unify :: Arg -> Storage -> Storage
@@ -269,7 +270,7 @@ arity (STR _ ar) = ar
 
 updateReg :: Storage -> Int -> Storage
 updateReg (st, cod, env, reg, tr, us) i =
-  let (us', reg') = restore_AC_UP us $ add_AC reg $ i - 1
+  let (us', reg') = restore_AC_UP st us $ add_AC reg $ i - 1
       reg'' = reg' {up = up reg' + 1,
                     l = numAt st (c reg + 5) + 1,
                     p = p reg' + 1}
@@ -282,14 +283,16 @@ add_AC reg n
   | otherwise = reg
 
 
-restore_AC_UP :: US -> Register -> (US, Register)
-restore_AC_UP us@(h1 : h2 : t) reg
-  | ac reg == 0 =
-    let reg' = reg {ac = h2,
-                    up = h1}
-    in (t, reg')
+restore_AC_UP :: Stack -> US -> Register -> (US, Register)
+restore_AC_UP st us@(newUP : newAC : t) reg
+  | ac reg == 0 || not (isTermElem $ elemAt st $ up reg + 1) =
+    if newAC == 1
+       then restore_AC_UP st t reg
+       else let reg' = reg {ac = newAC,
+                            up = newUP}
+            in (t, reg')
   | otherwise = (us, reg)
-restore_AC_UP us reg = (us, reg)
+restore_AC_UP _ us reg = (us, reg)
 
 
 save_AC_UP :: US -> Register -> Stack -> (US, Register)
@@ -317,6 +320,12 @@ numAt st i =
   case elemAt st i of
        NUM n -> n
        _ -> error "expected NUM constructor"
+
+
+isTermElem :: StackElem -> Bool
+isTermElem (STR _ _) = True
+isTermElem (VAR _ _) = True
+isTermElem _ = False
 
 
 setCNext :: Storage -> Stack
