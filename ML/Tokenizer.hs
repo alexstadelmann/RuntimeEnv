@@ -11,30 +11,32 @@ import Declarations
 
 
 tokenize:: String -> [(Symbol,Int)]
-tokenize "" = []
+tokenize "" = error "Cannot compile empty files."
 tokenize xs = tokenize' (filter (\a -> a `notElem` [' ', '\r']) xs) "" 1 []
 
 
 tokenize' :: String -> String -> Int -> [(Symbol,Int)] -> [(Symbol,Int)]
 
 -- kein nächstes Zeichen:
-tokenize' "" "" _ acc = reverse acc
+tokenize' "" "" line ((NewLine, _) : acc) = reverse acc
+
+tokenize' "" "" line acc = reverse $ (NewLine, line) : acc
 
 tokenize' "" symacc line acc
   | isUpper $ last symacc =
-    reverse $ (Variable $ reverse symacc, line):acc
+    reverse $ (NewLine, line) : (Variable $ reverse symacc, line) : acc
   | otherwise =
-    reverse $ (Name $ reverse symacc, line):acc
+    reverse $ (NewLine, line) : (Name $ reverse symacc, line) : acc
 
 -- nächste drei Zeichen "not":
-tokenize' ('n':'o':'t':xs) "" line acc =
-  tokenize' xs "" line $ (Not, line):acc
+tokenize' ('n' : 'o' : 't' : xs) "" line acc =
+  tokenize' xs "" line $ (Not, line) : acc
 
 -- nächste zwei Zeichen ":-"
-tokenize' (':':'-':xs) "" line acc =
+tokenize' (':' : '-' : xs) "" line acc =
   tokenize' xs "" line $ (If, line):acc
 
-tokenize' xxs@(':':'-':xs) symacc line acc 
+tokenize' xxs@(':' : '-' : xs) symacc line acc
   | isUpper $ last symacc =
     tokenize' xxs "" line $ (Variable $ reverse symacc, line):acc
   | otherwise =

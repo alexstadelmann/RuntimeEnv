@@ -8,30 +8,30 @@ module ML
   where
 
 
-import Debug.Trace
+-- import Debug.Trace
 
 import Declarations
 import Translator
 
 
--- evaluate :: Storage -> Storage
--- evaluate stor@(_, cod, _, reg, _, _) =
---   case cod !! (p reg) of
---        Prompt -> stor
---        command -> evaluate $ execute command stor
+evaluate :: Storage -> Storage
+evaluate stor@(_, cod, _, reg, _, _) =
+  case cod !! (p reg) of
+       Prompt -> stor
+       command -> evaluate $ execute command stor
 
 
 -- use this version of evaluate for debugging purposes:
 
-evaluate :: Storage -> Storage
-evaluate stor@(st, cod, _, reg, tr, us)
-  | trace (show st ++ "   " ++ show reg ++ "   " ++ show tr ++ "   "
-    ++ show us ++ "   " ++ show (cod !! (p reg)) ++ "\n")
-    False = undefined
-  | otherwise =
-    case cod !! (p reg) of
-         Prompt -> stor
-         command -> evaluate $ execute command stor
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(st, cod, _, reg, tr, us)
+--   | trace (show st ++ "   " ++ show reg ++ "   " ++ show tr ++ "   "
+--     ++ show us ++ "   " ++ show (cod !! (p reg)) ++ "\n")
+--     False = undefined
+--   | otherwise =
+--     case cod !! (p reg) of
+--          Prompt -> stor
+--          command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
@@ -131,7 +131,7 @@ backtrack stor@(st, cod, env, reg, tr, us)
                               pc = 0,
                               ac = -1}
                   (st'', tr') = unbind st' reg tr
-              in (st'', cod, env, reg', tr, [])
+              in (st'', cod, env, reg', tr', [])
   | otherwise = let reg' = reg {p = p reg + 1}
                 in (st, cod, env, reg', tr, us) where
 
@@ -140,7 +140,7 @@ backtrack stor@(st, cod, env, reg, tr, us)
 
   unbind' :: Int -> Stack -> Trail -> (Stack, Trail)
   unbind' i st tr@(h : t)
-    | i > length t = (st, tr)
+    | i > length tr = (st, tr)
     | otherwise =
       if h < length st
          then let VAR s _ = elemAt st h
@@ -323,12 +323,6 @@ numAt st i =
   case elemAt st i of
        NUM n -> n
        _ -> error "expected NUM constructor"
-
-
-isTermElem :: StackElem -> Bool
-isTermElem (STR _ _) = True
-isTermElem (VAR _ _) = True
-isTermElem _ = False
 
 
 setCNext :: Storage -> Stack
