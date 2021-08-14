@@ -57,21 +57,6 @@ showSolution(NUM n : t@(VAR _ _:_)) =
 showSolution [] = ""
 showSolution (_ : t) = showSolution t
 
-
-
-showVars :: Stack -> Stack -> String
-showVars st ((VAR s (-1):t)) = s ++ "/" ++ s ++ "\n" ++ showVars st t 
-showVars st ((VAR s a):t) = displayTerm (deref st a) st ++ "/" ++ s ++ "\n" ++ showVars st t
-showVars st ((EndEnv):t) = ""
-showVars st (_: t) = showVars st t 
-
-displayTerm :: Int -> Stack -> String
-displayTerm i st = 
-  case elemAt st i of
-    (VAR s (-1)) -> s
-    (STR s 0) -> s
-    (STR s a) -> fst (display "" (drop i (reverse st)) )
-
 display :: String -> Stack -> (String, Stack)
 display acc (STR s i : t)
   | i > 0 = display' (acc ++ s ++ "(") t $ i - 1
@@ -85,6 +70,33 @@ display' acc st i
   | otherwise = let result = display acc st
                 in (fst result ++ ")", snd result)
 
+-- the result stack, as it is when prompt is actuated, is called "all" in the subsequent functions.
+showVars :: Stack -> Stack -> String
+showVars all ((VAR s (-1):t)) = s ++ "/" ++ s ++ "\n" ++ showVars all t 
+showVars all (VAR s a : t) = displayTerm (deref all a) all ++ "/" ++ s ++ "\n" ++ showVars all t
+showVars all (EndEnv : t) = ""
+showVars all (_: t) = showVars all t 
+
+displayTerm :: Int -> Stack -> String
+displayTerm i all = 
+  case elemAt all i of
+    (VAR s (-1)) -> s
+    (STR s 0) -> s
+    (STR s a) -> fst (displayVars "" all $ drop i $ reverse all) 
+
+displayVars :: String -> Stack -> Stack -> (String, Stack)
+displayVars acc all (STR s i : t)
+  | i > 0 = displayVars' (acc ++ s ++ "(") all t $ i - 1
+  | otherwise = (acc ++ s, t)
+displayVars acc all (VAR s (-1) : t) = (acc ++ s, t)
+displayVars acc all (VAR s a : t) = (acc ++ displayTerm (deref all a) all, t)
+
+displayVars' :: String -> Stack -> Stack -> Int -> (String, Stack)
+displayVars' acc all st i
+  | i > 0 = let result = displayVars acc all st
+            in displayVars' (fst result ++ ", ") all (snd result) $ i - 1
+  | otherwise = let result = displayVars acc all st
+                in (fst result ++ ")", snd result)
 
 spaces :: Int -> String
 spaces i
