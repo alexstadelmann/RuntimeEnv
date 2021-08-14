@@ -8,30 +8,30 @@ module ML
   where
 
 
--- import Debug.Trace
+import Debug.Trace
 
 import Declarations
 import Translator
 
 
-evaluate :: Storage -> Storage
-evaluate stor@(_, cod, _, reg, _, _) =
-  case cod !! (p reg) of
-       Prompt -> stor
-       command -> evaluate $ execute command stor
+-- evaluate :: Storage -> Storage
+-- evaluate stor@(_, cod, _, reg, _, _) =
+--   case cod !! (p reg) of
+--        Prompt -> stor
+--        command -> evaluate $ execute command stor
 
 
 -- use this version of evaluate for debugging purposes:
 
--- evaluate :: Storage -> Storage
--- evaluate stor@(st, cod, _, reg, tr, us)
---   | trace (show st ++ "   " ++ show reg ++ "   " ++ show tr ++ "   "
---     ++ show us ++ "   " ++ show (cod !! (p reg)) ++ "\n")
---     False = undefined
---   | otherwise =
---     case cod !! (p reg) of
---          Prompt -> stor
---          command -> evaluate $ execute command stor
+evaluate :: Storage -> Storage
+evaluate stor@(st, cod, _, reg, tr, us)
+  | trace (show st ++ "   " ++ show reg ++ "   " ++ show tr ++ "   "
+    ++ show us ++ "   " ++ show (cod !! (p reg)) ++ "\n")
+    False = undefined
+  | otherwise =
+    case cod !! (p reg) of
+         Prompt -> stor
+         command -> evaluate $ execute command stor
 
 
 execute :: Command -> Storage -> Storage
@@ -285,8 +285,8 @@ add_AC reg n
 
 restore_AC_UP :: Stack -> US -> Register -> (US, Register)
 restore_AC_UP st us@(newUP : newAC : t) reg
-  | ac reg == 0 || not (isTermElem $ elemAt st $ up reg + 1) =
-    if newAC == 1
+  | ac reg == 0 =
+    if newAC == 0
        then restore_AC_UP st t reg
        else let reg' = reg {ac = newAC,
                             up = newUP}
@@ -299,8 +299,11 @@ save_AC_UP :: US -> Register -> Stack -> (US, Register)
 save_AC_UP us reg st
   | deref st (up reg) /= up reg
   && arity (elemAt st (deref st (up reg))) /= 0 =
-    let reg' = reg {up = deref st (up reg), ac = 1 }
-        us' = up reg : ac reg : us
+    let reg' = reg {up = deref st (up reg), ac = 1}
+--         acAppend = if ac reg > 1
+--                       then ac reg - 1
+--                       else ac reg
+        us' = up reg : ac reg - 1 : us
     in (us', reg')
   | otherwise = (us, reg)
 
