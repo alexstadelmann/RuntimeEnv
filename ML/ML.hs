@@ -229,7 +229,7 @@ unify' sto@(st, cod, env, reg, tr, us) (add1 : add2 : t) =
 skip :: Storage -> Storage
 skip sto@(st, cod, env, reg, tr, us)
   | sc reg >= 1 =
-    let ar = arity $ elemAt st $ up reg
+    let ar = arity $ elemAt st $ up reg + 1
         reg' = reg {up = up reg + 1,
                     sc = sc reg - 1 + ar}
     in skip (st, cod, env, reg', tr, us)
