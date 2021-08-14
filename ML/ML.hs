@@ -44,14 +44,24 @@ execute Backtrack = backtrack
 
 push :: Arg -> Storage -> Storage
 push CHP (st, cod, env, reg, tr, us) =
-  let st' = NUM (l reg)
+  let retAdd = getRetAdd cod $ p reg + 3
+      next = cNext env
+      first = head $ clauses env
+      cFirst =
+        if clauses env == []
+           then -1
+           else if p reg >= cGoal env
+                   then 0
+                   else if next (p reg) == next first
+                           then next first
+                           else first
+      st' = NUM (l reg)
           : NUM (length tr)
           : NUM (e reg)
           : NUM retAdd
           : NUM (c reg)
-          : NUM (cFirst env)
+          : NUM cFirst
           : st
-      retAdd = getRetAdd cod $ p reg + 3
       reg' = reg {c = length st,
                   r = length st + 1,
                   p = p reg + 1,
@@ -327,5 +337,11 @@ numAt st i =
 
 setCNext :: Storage -> Stack
 setCNext (st, _, env, reg, _, _) =
-  let cNew = NUM $ cNext env $ numAt st $ c reg
-  in replace st (c reg) cNew
+  let next = cNext env
+      cCur = numAt st $ c reg
+      cNew = if next cCur == -1 || p reg >= cGoal env
+                then next cCur
+                else if next (p reg) == next (next cCur)
+                        then next $ next cCur
+                        else next cCur
+  in replace st (c reg) $ NUM cNew
