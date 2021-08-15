@@ -1,3 +1,11 @@
+{- |
+Module      : ML
+Description : The core of the L5 compiler that tries to proof the goal.
+
+ML is the core of the L5 compiler that tries to proof the goal.
+Therefore it uses the resolution technique and
+backtracks if a resolvent turns out to be unprovable.
+-}
 module ML
 (
   evaluate,
@@ -14,14 +22,16 @@ module ML
 import Declarations
 
 
-evaluate :: Storage -> Storage
+-- | Tries to proof the goal of the L5 program.
+evaluate :: Storage -- ^ The storage initialized by the Main module.
+  -> Storage -- ^ The storage when reaching the prompt command.
 evaluate stor@(_, cod, _, reg, _, _) =
   case cod !! (p reg) of
        Prompt -> stor
        command -> evaluate $ execute command stor
 
 
--- use this version of evaluate for debugging purposes:
+-- Debugging version of evaluate:
 
 -- evaluate :: Storage -> Storage
 -- evaluate stor@(st, cod, _, reg, tr, us)
@@ -34,7 +44,10 @@ evaluate stor@(_, cod, _, reg, _, _) =
 --          command -> evaluate $ execute command stor
 
 
-execute :: Command -> Storage -> Storage
+-- | Executes the next ML command.
+execute :: Command -- ^ The next command of the ML code to be executed.
+  -> Storage -- ^ The storage before execution of the command.
+  -> Storage -- ^ The storage after execution of the command.
 execute (Push arg) = push arg
 execute (Unify arg) = unify arg
 execute Call = call
@@ -42,7 +55,10 @@ execute Return = returnL
 execute Backtrack = backtrack
 
 
-push :: Arg -> Storage -> Storage
+-- | Something is pushed to the stack.
+push :: Arg -- ^ What to push to the stack.
+  -> Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 push CHP (st, cod, env, reg, tr, us) =
   let retAdd = getRetAdd cod $ p reg + 3
       next = cNext env
@@ -95,7 +111,9 @@ push (EndEnv' n) (st, cod, env, reg, tr, us) =
   in (st', cod, env, reg', tr, us)
 
 
-call :: Storage -> Storage
+-- | Try to unify the current CHP with a clause.
+call :: Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 call stor@(st, cod, env, reg, tr, us)
   | numAt st (c reg) < 0 =
     let reg' = reg {b = True,
@@ -107,7 +125,9 @@ call stor@(st, cod, env, reg, tr, us)
     in (st', cod, env, reg', tr, us)
 
 
-returnL :: Storage -> Storage
+-- | Proof of a clause is finished.
+returnL :: Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 returnL (st, cod, env, reg, tr, us)
   | numAt st (r reg + 4) /= l reg - 1 =
     let reg' = reg {r = numAt st (r reg) + 1}
@@ -119,7 +139,9 @@ returnL (st, cod, env, reg, tr, us)
     in (st, cod, env, reg', tr, us)
 
 
-backtrack :: Storage -> Storage
+-- | Undo earlier unifications, if necessary.
+backtrack :: Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 backtrack stor@(st, cod, env, reg, tr, us)
   | b reg =
     case (numAt st $ c reg, numAt st $ r reg) of
@@ -157,7 +179,10 @@ backtrack stor@(st, cod, env, reg, tr, us)
   unbind' _ st tr = (st, tr)
 
 
-unify :: Arg -> Storage -> Storage
+-- | Unification of Arg and stack[UP] is tried.
+unify :: Arg -- ^ What to unify with stack[UP].
+  -> Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 unify (STR' sym ar) (st, cod, env, reg, tr, us)
   | pc reg >= 1 =
     let reg' = reg {pc = pc reg - 1 + ar,
@@ -200,7 +225,10 @@ unify (VAR' sym _) sto@(st, cod, env, reg, tr, us)
             STR sym' ar -> unify' sto [ref, up reg]
 
 
-unify' :: Storage -> [Int] -> Storage
+-- | Unification two terms on the stack is tried.
+unify' :: Storage -- ^ The storage before execution.
+  -> [Int] -- ^ Term elements that still need to be unified.
+  -> Storage -- ^ The storage after execution.
 unify' (st, cod, env, reg, tr, us) [] =
   let reg' = reg {sc = arity $ elemAt st $ up reg}
   in skip (st, cod, env, reg', tr, us)
@@ -234,7 +262,9 @@ unify' sto@(st, cod, env, reg, tr, us) (add1 : add2 : t) =
     | otherwise = adds
 
 
-skip :: Storage -> Storage
+-- | Skip some unification steps as a variable was just 
+skip :: Storage -- ^ The storage before execution.
+  -> Storage -- ^ The storage after execution.
 skip sto@(st, cod, env, reg, tr, us)
   | sc reg >= 1 =
     let ar = arity $ elemAt st $ up reg + 1
@@ -244,8 +274,12 @@ skip sto@(st, cod, env, reg, tr, us)
   | otherwise = updateReg sto 0
 
 
---      varname   push?   stack    register    pos in env
-sAdd :: String -> Bool -> Stack -> Register -> Int
+-- | For a variable, calculates the stack address in the local environment.
+sAdd :: String -- ^ Name of the variable.
+  -> Bool -- ^ True, if in push mode; False, if in unify mode.
+  -> Stack -- ^ The current stack.
+  -> Register -- ^ The current registers.
+  -> Int -- ^ The stack address in the local environment.
 sAdd sym pushmode st reg
   | pushmode =
     if c reg < 0
@@ -261,7 +295,10 @@ sAdd sym pushmode st reg
           else sAdd' sym st $ i + 1
 
 
-deref :: Stack -> Int -> Int
+-- | On the stack, dereferences from term element to where this element is bound to.
+deref :: Stack -- ^ The current stack.
+  -> Int -- ^ Where to derefence from.
+  -> Int -- ^ The dereferencing.
 deref st add =
   case elemAt st add of
     STR _ _ -> add
@@ -270,12 +307,17 @@ deref st add =
                 else deref st add'
 
 
-arity :: StackElem -> Int
+-- | Calculates the arity of a variable or predicate.
+arity :: StackElem -- ^ The variable or predicate.
+  -> Int -- ^ The arity.
 arity (VAR _ _) = 0
 arity (STR _ ar) = ar
 
 
-updateReg :: Storage -> Int -> Storage
+-- | Updates some registers after unify was executed.
+updateReg :: Storage -- ^ The storage before execution.
+  -> Int -- ^ How much to add to the argument counter.
+  -> Storage -- ^ The storage after execution.
 updateReg (st, cod, env, reg, tr, us) i =
   let (us', reg') = restore_AC_UP st us $ add_AC reg $ i - 1
       reg'' = reg' {up = up reg' + 1,
@@ -284,13 +326,20 @@ updateReg (st, cod, env, reg, tr, us) i =
   in (st, cod, env, reg'', tr, us')
 
 
-add_AC :: Register -> Int -> Register
+-- | Adds a fixed value to the argument counter.
+add_AC :: Register -- ^ Registers before execution.
+  -> Int -- ^ How much to add.
+  -> Register -- ^ Registers after execution.
 add_AC reg n
   | ac reg /= -1 = reg {ac = ac reg + n}
   | otherwise = reg
 
 
-restore_AC_UP :: Stack -> US -> Register -> (US, Register)
+-- | Restore old argument counter and unification pointer if necessary.
+restore_AC_UP :: Stack -- ^ The current stack.
+  -> US -- ^ Unification stack before execution.
+  -> Register -- ^ Registers before execution.
+  -> (US, Register) -- ^ Unification stack and registers after execution.
 restore_AC_UP st us@(newUP : newAC : t) reg
   | ac reg == 0 =
     if newAC == 0
@@ -302,7 +351,11 @@ restore_AC_UP st us@(newUP : newAC : t) reg
 restore_AC_UP _ us reg = (us, reg)
 
 
-save_AC_UP :: US -> Register -> Stack -> (US, Register)
+-- | Save current argument counter and unification pointer if necessary.
+save_AC_UP :: US -- ^ Unification stack before execution.
+  -> Register -- ^ Registers before execution.
+  -> Stack -- ^ The current stack.
+  -> (US, Register) -- ^ Unification stack and registers after execution.
 save_AC_UP us reg st
   | deref st (up reg) /= up reg
   && arity (elemAt st (deref st (up reg))) /= 0 =
@@ -315,24 +368,39 @@ save_AC_UP us reg st
   | otherwise = (us, reg)
 
 
-replace :: [a] -> Int -> a -> [a]
+{- |
+  Replace an element in a list at a given index with a new one.
+  Note that the index is reversed in comparance to common Haskell lists.
+-}
+replace :: [a] -- ^ The list before execution.
+  -> Int -- ^ The index.
+  -> a -- ^ The new element.
+  -> [a] -- ^ The list after an element was replaced.
 replace xs pos x =
   let i = length xs - pos - 1
   in take i xs ++ x : drop (i + 1) xs
 
 
-elemAt :: Stack -> Int -> StackElem
+-- | Returns the stack element at a given index
+elemAt :: Stack -- ^ The stack.
+  -> Int -- ^ The index.
+  -> StackElem -- ^ The stack element at the given index.
 elemAt st i = st !! (length st - i - 1)
 
 
-numAt :: Stack -> Int -> Int
+-- | Returns a number save in the stack at a given index.
+numAt :: Stack -- ^ The stack.
+  -> Int -- ^ The index.
+  -> Int -- ^ The integer value saved in the stack.
 numAt st i =
   case elemAt st i of
        NUM n -> n
        _ -> error "expected NUM constructor"
 
 
-setCNext :: Storage -> Stack
+-- | For the physically topmost CHP, set the next clause to try unification with.
+setCNext :: Storage -- ^ The storage before execution.
+  -> Stack -- ^ The stack after execution.
 setCNext (st, _, env, reg, _, _) =
   let next = cNext env
       cCur = numAt st $ c reg
@@ -344,7 +412,10 @@ setCNext (st, _, env, reg, _, _) =
   in replace st (c reg) $ NUM cNew
 
 
-cNext :: Env -> Int -> Int
+-- | Finds the next clause starting from a clause in the code environent
+cNext :: Env -- ^ The code environemt.
+  -> Int -- ^ The current command.
+  -> Int -- ^ The next clause.
 cNext env = cNext' (clauses env) where
 
   cNext' :: [Int] -> Int -> Int

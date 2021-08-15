@@ -1,7 +1,9 @@
 {- |
-Module : Translator
+Module      : Translator
+Description : Takes an L5 syntax tree as input and creates an internal ML program out of it.
 
 The translator takes an L5 syntax tree as input and creates an internal ML program out of it.
+The internal ML program is a sequence of commands that tell the compiler what to do in the next step.
 -}
 module Translator
 (
