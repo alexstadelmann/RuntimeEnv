@@ -59,6 +59,27 @@ execute Backtrack = backtrack
 push :: Arg -- ^ What to push to the stack.
   -> Storage -- ^ The storage before execution.
   -> Storage -- ^ The storage after execution.
+
+{-
+  A new choice point is created. A choice point looks like follows:
+  
+  +-----------------------+
+  | next clause           | <- C
+  +-----------------------+
+  | last choice point     | <- R
+  +-----------------------+
+  | return address        |
+  +-----------------------+
+  | address of local env  |
+  +-----------------------+
+  | top of trail [before] |
+  +-----------------------+
+  | level of this CHP     |
+  +-----------------------+
+  | [Atom]                |
+  | ...                   |
+  
+-}
 push CHP (st, cod, env, reg, tr, us) =
   let retAdd = getRetAdd cod $ p reg + 3
       next = cNext env
@@ -91,11 +112,13 @@ push CHP (st, cod, env, reg, tr, us) =
          Push CHP -> i
          _ -> getRetAdd cod $ i + 1
 
+-- A structure cell is pushed to the stack.
 push (STR' s i) (st, cod, env, reg, tr, us) =
   let st' = STR s i : st
       reg' = reg {p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
+-- A variable is pushed to the stack.
 push (VAR' s inEnv) (st, cod, env, reg, tr, us) =
   let ref = if inEnv
                then -1
@@ -104,6 +127,7 @@ push (VAR' s inEnv) (st, cod, env, reg, tr, us) =
       reg' = reg {p = p reg + 1}
   in (st', cod, env, reg', tr, us)
 
+-- The end of an environment is pushed to the stack.
 push (EndEnv' n) (st, cod, env, reg, tr, us) =
   let st' = EndEnv : st
       reg' = reg {e = length st - n,
@@ -111,7 +135,7 @@ push (EndEnv' n) (st, cod, env, reg, tr, us) =
   in (st', cod, env, reg', tr, us)
 
 
--- | Try to unify the current CHP with a clause.
+-- | Tries to unify the current CHP with a clause.
 call :: Storage -- ^ The storage before execution.
   -> Storage -- ^ The storage after execution.
 call stor@(st, cod, env, reg, tr, us)
@@ -404,6 +428,7 @@ setCNext :: Storage -- ^ The storage before execution.
 setCNext (st, _, env, reg, _, _) =
   let next = cNext env
       cCur = numAt st $ c reg
+      -- Clause of current CHP will be left out:
       cNew
         | next cCur == -1 = next cCur
         | p reg >= cGoal env = next cCur
