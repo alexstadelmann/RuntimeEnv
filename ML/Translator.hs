@@ -1,3 +1,8 @@
+{- |
+Module : Translator
+
+The translator takes an L5 syntax tree as input and creates an internal ML program out of it.
+-}
 module Translator
 (
   translate,
@@ -11,7 +16,9 @@ import qualified Data.Set as Set
 import Declarations
 
 
-translate :: SyntaxTree -> Code
+-- | Translates a complete syntax tree to ML code.
+translate :: SyntaxTree -- ^ The syntax tree.
+  -> Code -- ^ The ML code.
 translate (SyntaxTree cs (varseq, g)) =
   concatMap translate' cs ++ transEnv varseq
   ++ transBody g ++ [Backtrack, Prompt] where
@@ -20,14 +27,19 @@ translate (SyntaxTree cs (varseq, g)) =
   translate' (varSeq, PClause nvlt g) =
     transEnv varSeq ++ transHead nvlt ++ transBody g ++ [Return]
 
-transHead :: NVLTerm -> Code
-transHead nvlt = concatMap transHead' $ linLTerm $ NVar nvlt
 
-transHead' :: Arg -> Code
-transHead' str = [Unify str, Backtrack]
+-- | Translates the head of a program clause to ML code.
+transHead :: NVLTerm -- ^ The head of the program clause.
+  -> Code -- ^ The ML code.
+transHead nvlt = concatMap transHead' $ linLTerm $ NVar nvlt where
+
+  transHead' :: Arg -> Code
+  transHead' str = [Unify str, Backtrack]
 
 
-transBody :: Goal -> Code
+-- | Translates the body of a program clause to ML code.
+transBody :: Goal -- ^ The body of the program clause.
+  -> Code -- ^ The ML code.
 transBody = concatMap transBody' where
 
   transBody' :: Literal -> Code
@@ -35,19 +47,25 @@ transBody = concatMap transBody' where
     Push CHP : map (\x -> Push x) (linLTerm lt) ++ [Call]
 
 
-transEnv :: VarSeq -> Code
+-- | Translates a variable sequence to ML code.
+transEnv :: VarSeq -- ^ The variable sequence.
+  -> Code -- ^ The ML code.
 transEnv v = foldl (\xs x -> Push (VAR' x True) : xs)
                    [Push $ EndEnv' $ Set.size v]
                    $ Set.toDescList v
 
 
-linLTerm :: LTerm -> [Arg]
+-- | Linearizes a term, e.g. p(a, X) to p 1, a 0, X.
+linLTerm :: LTerm -- ^ The term.
+  -> [Arg] -- ^ The linearization.
 linLTerm (Var s) = [VAR' s False]
 linLTerm (NVar (NVLTerm a xs)) =
   STR' a (length xs) : concatMap linLTerm xs
 
 
-createEnv :: Code -> Env
+-- | Creates a code environment out of ML code.
+createEnv :: Code -- ^ The ML code.
+  -> Env -- ^ The code environment.
 createEnv = createEnv' [0] 0 where
 
   createEnv' :: [Int] -> Int -> Code -> Env

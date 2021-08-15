@@ -1,3 +1,8 @@
+{- |
+Module : Parser
+
+The parser takes L5 tokens as input and creates an L5 syntax tree out of these.
+-}
 module Parser
 (
   parse
@@ -10,7 +15,9 @@ import qualified Data.Set as Set
 import Declarations
 
 
-parse :: [(Symbol, Int)] -> SyntaxTree
+-- | Creates a syntax tree out of tokens created by the tokenizer.
+parse :: [(Symbol, Int)] -- ^ List of tokens and their corresponding line in the source code.
+  -> SyntaxTree -- The syntax tree created by the Parser.
 parse s =
   case program s [] of
        ([], p) -> p
@@ -20,7 +27,10 @@ parse s =
          ++ ".\nParsing of program already finished, but found: " ++ show sym
 
 
-program :: [(Symbol, Int)] -> [PClause] -> ([(Symbol, Int)], SyntaxTree)
+-- | Parses a complete L5 program if possible.
+program :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> [PClause] -- ^ Program clauses already parsed.
+  -> ([(Symbol, Int)], SyntaxTree) -- ^ Remaining tokens, syntax tree as actual result.
 program s@((Name _, _ ) : _) pcs =
   let result = pclause s
   in program (fst result) $ (snd result) : pcs
@@ -35,7 +45,9 @@ program ((sym, line) : _) _ =
   ++ ".\nExpected start of program clause or goal, but found: " ++ show sym
 
 
-pclause :: [(Symbol, Int)] -> ([(Symbol, Int)], PClause)
+-- | Parses a program clause if possible.
+pclause :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> ([(Symbol, Int)], PClause) -- ^ Remaining tokens, program clause as actual result.
 pclause s@((Name _, _) : _) = uncurry pclause' $ nvlterm s where
 
   pclause' :: [(Symbol, Int)] -> NVLTerm -> ([(Symbol, Int)], PClause)
@@ -47,7 +59,7 @@ pclause s@((Name _, _) : _) = uncurry pclause' $ nvlterm s where
     error $ "Parse error in line " ++ show line
     ++ ".\nExpected end of program clause or start of goal, but found: " ++ show sym
 
-  -- Jede Klausel muss in eigener, neuer Zeile stehen:
+  -- Every clause has to be in a new line:
   pclause'' :: [(Symbol, Int)] -> PClause -> ([(Symbol, Int)], PClause)
   pclause'' ((NewLine, _) : t) pc = (t, pc) 
   pclause'' ((sym, line) : _) _ = 
@@ -59,7 +71,9 @@ pclause ((sym, line) : _) =
   ++ ".\nExpected start of program clause, but found: " ++ show sym
 
 
-goal :: [(Symbol, Int)] -> ([(Symbol, Int)], Goal)
+-- | Parses a goal if possible.
+goal :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> ([(Symbol, Int)], Goal) -- ^ Remaining tokens, goal as actual result.
 goal ((If, _) : t) = goal' t [] where
 
   goal' :: [(Symbol, Int)] -> [Literal] -> ([(Symbol, Int)], Goal)
@@ -83,7 +97,9 @@ goal ((sym, line) : _) =
   ++ ".\nExpected start of goal, but found: " ++ show sym
 
 
-literal :: [(Symbol, Int)] -> ([(Symbol, Int)], Literal)
+-- | Parses a literal if possible.
+literal :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> ([(Symbol, Int)], Literal) -- ^ Remaining tokens, literal as actual result.
 literal ((Not, _) : t) =
   let lt = lterm t
   in (fst lt, Literal True $ snd lt)
@@ -97,7 +113,9 @@ literal s@((sym,line):_)
     ++ ".\nExpected \"not\" or name or variable, but found: " ++ show sym
 
 
-nvlterm :: [(Symbol, Int)] -> ([(Symbol, Int)], NVLTerm)
+-- | Parses an atom if possible.
+nvlterm :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> ([(Symbol, Int)], NVLTerm) -- ^ Remaining tokens, atom as actual result.
 nvlterm ((Name n, _) : t) = nvlterm' t n where
 
   nvlterm' :: [(Symbol, Int)] -> String -> ([(Symbol, Int)], NVLTerm)
@@ -126,7 +144,9 @@ nvlterm ((sym, line) : _) =
   ++ ".\nExpected name, but found: " ++ show sym
 
 
-lterm :: [(Symbol, Int)] -> ([(Symbol, Int)], LTerm)
+-- | Parses a term if possible.
+lterm :: [(Symbol, Int)] -- ^ List of remaining tokens and their lines in the source code.
+  -> ([(Symbol, Int)], LTerm) -- ^ Remaining tokens, term as actual result.
 lterm ((Variable v, _) : t) = (t, Var v)
 
 lterm s@((Name _, _) : _) =
@@ -138,33 +158,47 @@ lterm ((sym, line) : _) =
   ++ ".\nExpected name or variable, but found: " ++ show sym
 
 
-fstOfLTerm :: Symbol -> Bool
+-- | Checks whether a symbol may be the first symbol of a term.
+fstOfLTerm :: Symbol -- ^ The symbol.
+  -> Bool -- ^ True, if symbol may be the first symbol of a term.
 fstOfLTerm (Name _) = True
 fstOfLTerm (Variable _) = True
 fstOfLTerm _ = False
 
 
-fstOfLit :: Symbol -> Bool
+-- | Checks whether a symbol may be the first symbol of a literal.
+fstOfLit :: Symbol -- ^ The symbol.
+  -> Bool -- ^ True, if symbol may be the first symbol of a literal.
 fstOfLit Not = True
 fstOfLit s = fstOfLTerm s
 
 
-varseqpc :: PClause -> VarSeq
+-- | Creates the variable sequence of a program clause.
+varseqpc :: PClause -- ^ The program clause.
+  -> VarSeq -- ^ The variable sequence.
 varseqpc (PClause nvlt g) = Set.union (varseqnvlt nvlt) $ varseqgoal g
 
 
-varseqnvlt :: NVLTerm -> VarSeq
+-- | Creates the variable sequence of an atom.
+varseqnvlt :: NVLTerm -- ^ The atom.
+  -> VarSeq -- ^ The variable sequence.
 varseqnvlt (NVLTerm _ lts) = Set.unions $ map varseqlt lts
 
 
-varseqlt :: LTerm -> VarSeq
+-- | Creates the variable sequence of a term.
+varseqlt :: LTerm -- ^ The term.
+  -> VarSeq -- ^ The variable sequence.
 varseqlt (Var str) = Set.singleton str
 varseqlt (NVar nvlt) = varseqnvlt nvlt
 
 
-varseqgoal :: Goal -> VarSeq
+-- | Creates the variable sequence of a goal.
+varseqgoal :: Goal -- ^ The goal.
+  -> VarSeq -- ^ The variable sequence.
 varseqgoal lits = Set.unions $ map varseqlit lits
 
 
-varseqlit :: Literal -> VarSeq
+-- | Creates the variable sequence of a literal.
+varseqlit :: Literal -- ^ The literal.
+  -> VarSeq -- ^ The variable sequence.
 varseqlit (Literal _ lt) = varseqlt lt

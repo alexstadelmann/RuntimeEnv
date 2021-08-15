@@ -1,3 +1,8 @@
+{- |
+Module : Declarations
+
+This module contains all data type declarations used by ML.
+-}
 module Declarations
 (
   Stack,
@@ -26,78 +31,115 @@ module Declarations
 import qualified Data.Set as Set
 
 
+-- | All "memory" that is needed for ML.
 type Storage = (Stack, Code, Env, Register, Trail, US)
 
 
+-- | Choice Points and local environments are stored here.
 type Stack = [StackElem]
 
 
-data StackElem = NUM Int
-               | STR String Int
-               | VAR String Int
-               | EndEnv
+-- | All possible elements of a stack cell
+data StackElem
+  -- | Stack and code addresses, other ints (arg: the actual variable).
+  = NUM Int
+  -- | A structure cell (args: name, arity).
+  | STR String Int
+  -- | Variables (args: name, binding).
+  | VAR String Int
+  -- | Indicates the end of a local environment.
+  | EndEnv
   deriving (Show, Eq)
 
 
+-- | The internal ML program.
 type Code = [Command]
 
 
-data Command = Push Arg
-             | Unify Arg
-             | Call
-             | Return
-             | Backtrack
-             | Prompt
+-- | All commands that ML needs.
+data Command
+  -- | Something is pushed to the stack.
+  = Push Arg
+  -- | Unification of Arg and a term on the stack is tried.
+  | Unify Arg
+  -- | Try to unify current CHP with a clause.
+  | Call
+  -- | Proof of a clause is finished.
+  | Return
+  -- | Undo earlier unifications, if necessary.
+  | Backtrack
+  -- | Proof of goal (un-)successfully terminates.
+  | Prompt
   deriving (Show, Eq)
 
 
-data Arg = STR' String Int
-         -- Bool indicates whether variable is part of local env:
-         | VAR' String Bool
-         | CHP
-         | EndEnv' Int
+-- | All possible arguments for push or unify commands.
+data Arg
+  -- | A structure cell (args: name, arity).
+  = STR' String Int
+  -- | A variable (args: name, is part of a local env).
+  | VAR' String Bool
+  -- | Only for push: a CHP is pushed.
+  | CHP
+  -- | Only for push: end of local env is pushed (arg: size of env).
+  | EndEnv' Int
   deriving (Show, Eq)
 
 
-data Env = Env {clauses :: [Int],
-                cGoal :: Int,
-                cLast :: Int}
+
+-- | The code environment stores information about the internal ML program
+data Env = Env {clauses :: [Int], -- ^ The first code address of every clause.
+                cGoal :: Int, -- ^ The first code address of the goal.
+                cLast :: Int} -- ^ The code address of the command prompt.
   deriving (Show)
 
 
-data Register = Reg {b :: Bool, -- backtrack flag
-                     c :: Int, -- last CHP
-                     r :: Int, -- CHP to return to
-                     p :: Int, -- program counter
-                     l :: Int, -- level of current CHP
-                     e :: Int, -- local environment
-                     up :: Int, -- unification pointer
-                     pc :: Int, -- push counter
-                     sc :: Int, -- skip counter
-                     ac :: Int} -- argument counter
+-- | Single values that ML needs.
+data Register = Reg {b :: Bool, -- ^ Backtrack flag.
+                     c :: Int, -- ^ Last CHP.
+                     r :: Int, -- ^ CHP to return to.
+                     p :: Int, -- ^ Program counter.
+                     l :: Int, -- ^ Level of current CHP.
+                     e :: Int, -- ^ Local environment.
+                     up :: Int, -- ^ Unification pointer.
+                     pc :: Int, -- ^ Push counter.
+                     sc :: Int, -- ^ Skip counter.
+                     ac :: Int} -- ^ Argument counter.
   deriving (Show)
 
 
+-- | Variable bindings are stored here for backtracking purposes.
 type Trail = [Int]
 
 
+-- | The unification stack saves jumps of the unification pointer.
 type US = [Int]
 
 
+-- | All variables that occur in one clause.
 type VarSeq = Set.Set String
 
 
--- declarations for Tokenizer and Parser
-
-data Symbol = Variable String
-            | Name String
-            | LBracket
-            | RBracket
-            | Not
-            | If
-            | Point
-            | And
-            | NewLine
+-- | All possible tokens that the tokenizer may create.
+data Symbol
+  -- | A variable.
+  = Variable String
+  -- | A predicate symbol.
+  | Name String
+  -- | An opening bracket.
+  | LBracket
+  -- | A closing bracket.
+  | RBracket
+  -- | A negation.
+  | Not
+  -- | A reversed implication.
+  | If
+  -- | The end of a program clause or the goal.
+  | Point
+  -- | The logical and.
+  | And
+  -- | A new line in the source code.
+  | NewLine
 
 instance Show Symbol where
   show (Variable s) = s
@@ -111,28 +153,39 @@ instance Show Symbol where
   show NewLine = "new line"
 
 
-data SyntaxTree = SyntaxTree [(VarSeq, PClause)] (VarSeq, Goal)
+
+-- | A syntax tree created by the parser.
+data SyntaxTree =
+  SyntaxTree [(VarSeq, PClause)] (VarSeq, Goal)
   deriving (Show)
 
 
-data PClause = PClause NVLTerm Goal
+-- | A program clause, part of a syntax tree.
+data PClause =
+  PClause NVLTerm Goal
   deriving (Show)
 
 
+-- | A goal, part of a syntax tree.
 type Goal = [Literal]
 
 
+-- | A literal, part of a syntax tree.
 data Literal = Literal IsNegated LTerm
   deriving (Show)
 
 
+-- | Indicates whether a literal is negated.
 type IsNegated = Bool
 
 
+-- | An atom, part of a syntax tree.
 data NVLTerm = NVLTerm String [LTerm]
   deriving (Show, Eq)
 
 
-data LTerm = Var String
-           | NVar NVLTerm
+-- | A term, part of a syntax tree.
+data LTerm
+  = Var String -- ^ A Variable.
+  | NVar NVLTerm -- ^ An atom.
   deriving (Show, Eq)
