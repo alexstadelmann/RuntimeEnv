@@ -20,36 +20,36 @@ main = do
   putStr "> "
   inputFilePath <- getLine
   fileExists <- doesFileExist inputFilePath
-  if not $ isSuffixOf ".l5" inputFilePath
-     then do
-       putStrLn "Only L5 programs may be compiled."
-       main
-     else if not fileExists
-             then do
-               putStrLn "This file does not exist."
-               main
-             else do
-               inputProgram <- readFile inputFilePath
-               putStrLn "Source code:"
-               putStrLn inputProgram
-               let tokens = tokenize inputProgram
-                   syntaxTree = parse tokens
-                   cod = translate syntaxTree
-                   st = []
-                   env = createEnv cod
-                   reg = Reg {b = False,
-                              c = -1,
-                              r = -1,
-                              p = cGoal env,
-                              e = -1,
-                              l = 0,
-                              up = 0,
-                              pc = 0,
-                              sc = 0,
-                              ac = -1}
-                   tr = []
-                   us = []
-               nextSolution (st, cod, env, reg, tr, us)
+  let action
+        | not $ isSuffixOf ".l5" inputFilePath = do
+          putStrLn "Only L5 programs (.l5) may be compiled."
+          main
+        | not fileExists = do
+          putStrLn "This file does not exist."
+          main
+        | otherwise = do
+          inputProgram <- readFile inputFilePath
+          putStrLn "Source code:"
+          putStrLn inputProgram
+          let tokens = tokenize inputProgram
+              syntaxTree = parse tokens
+              cod = translate syntaxTree
+              st = []
+              env = createEnv cod
+              reg = Reg {b = False,
+                         c = -1,
+                         r = -1,
+                         p = cGoal env,
+                         e = -1,
+                         l = 0,
+                         up = 0,
+                         pc = 0,
+                         sc = 0,
+                         ac = -1}
+              tr = []
+              us = []
+          nextSolution (st, cod, env, reg, tr, us)
+  action
 
 
 nextSolution :: Storage -> IO ()

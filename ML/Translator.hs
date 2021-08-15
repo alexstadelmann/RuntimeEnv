@@ -1,8 +1,7 @@
 module Translator
 (
   translate,
-  createEnv,
-  cNext
+  createEnv
 )
   where
 
@@ -58,13 +57,3 @@ createEnv = createEnv' [0] 0 where
     Env {clauses = reverse t, cGoal = h, cLast = i}
   createEnv' cs i (_ : t) =
     createEnv' cs (i + 1) t
-
-
-cNext :: Env -> Int -> Int
-cNext env = cNext' (clauses env) where
-
-  cNext' :: [Int] -> Int -> Int
-  cNext' [] _ = -1
-  cNext' (h : t) i
-    | h <= i = cNext' t i
-    | otherwise = h

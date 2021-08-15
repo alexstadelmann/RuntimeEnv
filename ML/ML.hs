@@ -11,7 +11,6 @@ module ML
 -- import Debug.Trace
 
 import Declarations
-import Translator
 
 
 evaluate :: Storage -> Storage
@@ -47,14 +46,11 @@ push CHP (st, cod, env, reg, tr, us) =
   let retAdd = getRetAdd cod $ p reg + 3
       next = cNext env
       first = head $ clauses env
-      cFirst =
-        if clauses env == []
-           then -1
-           else if p reg >= cGoal env
-                   then 0
-                   else if next (p reg) == next first
-                           then next first
-                           else first
+      cFirst
+        | null $ clauses env = -1
+        | p reg >= cGoal env = 0
+        | next (p reg) /= next first = first
+        | otherwise = next first
       st' = NUM (l reg)
           : NUM (length tr)
           : NUM (e reg)
@@ -339,9 +335,19 @@ setCNext :: Storage -> Stack
 setCNext (st, _, env, reg, _, _) =
   let next = cNext env
       cCur = numAt st $ c reg
-      cNew = if next cCur == -1 || p reg >= cGoal env
-                then next cCur
-                else if next (p reg) == next (next cCur)
-                        then next $ next cCur
-                        else next cCur
+      cNew
+        | next cCur == -1 = next cCur
+        | p reg >= cGoal env = next cCur
+        | next (p reg) /= next (next cCur) = next cCur
+        | otherwise = next $ next cCur
   in replace st (c reg) $ NUM cNew
+
+
+cNext :: Env -> Int -> Int
+cNext env = cNext' (clauses env) where
+
+  cNext' :: [Int] -> Int -> Int
+  cNext' [] _ = -1
+  cNext' (h : t) i
+    | h <= i = cNext' t i
+    | otherwise = h
