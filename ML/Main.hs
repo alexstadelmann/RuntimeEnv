@@ -1,6 +1,11 @@
 module Main where
 
 
+import Data.Char (toUpper)
+import Data.List
+import System.Directory (doesFileExist)
+import System.IO
+
 import Declarations
 import Tokenizer
 import Parser
@@ -10,28 +15,41 @@ import ML
 
 main :: IO ()
 main = do
-  putStrLn "Please, specify a file to be compiled."
+  hSetBuffering stdout NoBuffering
+  putStrLn "Please, specify the file path to an L5 program."
   putStr "> "
   inputFilePath <- getLine
-  inputProgram <- readFile inputFilePath
-  let tokens = tokenize inputProgram
-      syntaxTree = parse tokens
-      cod = translate syntaxTree
-      st = []
-      env = createEnv cod
-      reg = Reg {b = False,
-                 c = -1,
-                 r = -1,
-                 p = cGoal env,
-                 e = -1,
-                 l = 0,
-                 up = 0,
-                 pc = 0,
-                 sc = 0,
-                 ac = -1}
-      tr = []
-      us = []
-  nextSolution (st, cod, env, reg, tr, us)
+  fileExists <- doesFileExist inputFilePath
+  if not $ isSuffixOf ".l5" inputFilePath
+     then do
+       putStrLn "Only L5 programs may be compiled."
+       main
+     else if not fileExists
+             then do
+               putStrLn "This file does not exist."
+               main
+             else do
+               inputProgram <- readFile inputFilePath
+               putStrLn "Source code:"
+               putStrLn inputProgram
+               let tokens = tokenize inputProgram
+                   syntaxTree = parse tokens
+                   cod = translate syntaxTree
+                   st = []
+                   env = createEnv cod
+                   reg = Reg {b = False,
+                              c = -1,
+                              r = -1,
+                              p = cGoal env,
+                              e = -1,
+                              l = 0,
+                              up = 0,
+                              pc = 0,
+                              sc = 0,
+                              ac = -1}
+                   tr = []
+                   us = []
+               nextSolution (st, cod, env, reg, tr, us)
 
 
 nextSolution :: Storage -> IO ()
@@ -39,11 +57,12 @@ nextSolution s = do
   let result = evaluate s
       (st, cod, env, reg, tr, us) = result
   if b reg
-     then putStrLn "No (more) solutions"
-     else do putStrLn "Prooftree: "
-             putStrLn $ (showSolution $ reverse st )
-             putStrLn "Substitutions: "
-             putStrLn $ showVars st (reverse st)
+     then do putStrLn "\nNo (more) solutions\n"
+             main
+     else do putStrLn "Prooftree:"
+             putStrLn $ showSolution $ reverse st
+             putStrLn "Substitutions:"
+             putStrLn $ showVars st $ reverse st
              wantMore result
 
 
@@ -70,12 +89,14 @@ display' acc st i
   | otherwise = let result = display acc st
                 in (fst result ++ ")", snd result)
 
+
 -- the result stack, as it is when prompt is actuated, is called "all" in the subsequent functions.
 showVars :: Stack -> Stack -> String
 showVars all ((VAR s (-1):t)) = s ++ "/" ++ s ++ "\n" ++ showVars all t 
 showVars all (VAR s a : t) = displayTerm (deref all a) all ++ "/" ++ s ++ "\n" ++ showVars all t
 showVars all (EndEnv : t) = ""
 showVars all (_: t) = showVars all t 
+
 
 displayTerm :: Int -> Stack -> String
 displayTerm i all = 
@@ -84,12 +105,14 @@ displayTerm i all =
     (STR s 0) -> s
     (STR s a) -> fst (displayVars "" all $ drop i $ reverse all) 
 
+
 displayVars :: String -> Stack -> Stack -> (String, Stack)
 displayVars acc all (STR s i : t)
   | i > 0 = displayVars' (acc ++ s ++ "(") all t $ i - 1
   | otherwise = (acc ++ s, t)
 displayVars acc all (VAR s (-1) : t) = (acc ++ s, t)
 displayVars acc all (VAR s a : t) = (acc ++ displayTerm (deref all a) all, t)
+
 
 displayVars' :: String -> Stack -> Stack -> Int -> (String, Stack)
 displayVars' acc all st i
@@ -98,6 +121,7 @@ displayVars' acc all st i
   | otherwise = let result = displayVars acc all st
                 in (fst result ++ ")", snd result)
 
+
 spaces :: Int -> String
 spaces i
   | i > 0 = ' ' : '|' : ' ' : spaces (i - 1)
@@ -105,16 +129,27 @@ spaces i
 
 
 wantMore :: Storage -> IO ()
-wantMore s@(st, cod, env, reg, tr, us) = do
+wantMore sto = do
   putStrLn "Want More? (Yes [Y], No [N])"
   putStr "> "
   more <- getLine
-  case more of
-       "N" -> putStrLn "Good Bye!"
-       "Y" -> let reg' = reg {b = True,
-                              p = p reg - 1,
-                              r = c reg + 1,
-                              l = numAt st $ c reg + 3}
-              in nextSolution (st, cod, env, reg', tr, us)
+  case map toUpper more of
+       "N" -> wantMore' sto False
+       "NO" -> wantMore' sto False
+       "Y" -> wantMore' sto True
+       "YE" -> wantMore' sto True
+       "YES" -> wantMore' sto True
+       ";" -> wantMore' sto True
        _ -> do putStrLn "Not a valid input"
-               wantMore s
+               wantMore sto
+
+wantMore' :: Storage -> Bool -> IO ()
+wantMore' sto@(st, cod, env, reg, tr, us) more
+  | more =
+    let reg' = reg {b = True,
+                    p = p reg - 1,
+                    r = c reg + 1,
+                    l = numAt st $ c reg + 3}
+    in nextSolution (st, cod, env, reg', tr, us)
+  | otherwise = do putStrLn ""
+                   main
