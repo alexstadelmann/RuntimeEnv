@@ -3,7 +3,8 @@ module ML
   evaluate,
   numAt,
   elemAt,
-  deref
+  deref,
+  cNext
 )
   where
 
@@ -151,8 +152,8 @@ backtrack stor@(st, cod, env, reg, tr, us)
       if h < length st
          then let VAR s _ = elemAt st h
                   st' = replace st h $ VAR s $ -1
-              in unbind' (i + 1) st' t
-         else unbind' (i + 1) st t
+              in unbind' i st' t
+         else unbind' i st t
   unbind' _ st tr = (st, tr)
 
 

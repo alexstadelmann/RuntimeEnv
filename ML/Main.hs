@@ -34,7 +34,6 @@ main = do
           let tokens = tokenize inputProgram
               syntaxTree = parse tokens
               cod = translate syntaxTree
-              st = []
               env = createEnv cod
               reg = Reg {b = False,
                          c = -1,
@@ -46,9 +45,7 @@ main = do
                          pc = 0,
                          sc = 0,
                          ac = -1}
-              tr = []
-              us = []
-          nextSolution (st, cod, env, reg, tr, us)
+          nextSolution ([], cod, env, reg, [], [])
   action
 
 
@@ -59,28 +56,66 @@ nextSolution s = do
   if b reg
      then do putStrLn "\nNo (more) solutions\n"
              main
-     else do putStrLn "Prooftree:"
-             putStrLn $ showSolution $ reverse st
+     else do putStrLn "Proof tree:"
+             putStrLn $ showProofTree cod env $ reverse st
              putStrLn "Substitutions:"
              putStrLn $ showVars st $ reverse st
              wantMore result
 
 
-showSolution :: Stack -> String
-showSolution (NUM n : t@(STR _ _ : _)) =
-  let result = display "" t
-  in spaces n ++ fst result ++ "\n" ++ showSolution (snd result)
-showSolution(NUM n : t@(VAR _ _:_)) =
-  let result = display "" t
-  in spaces n ++ fst result ++ "\n" ++ showSolution (snd result)
-showSolution [] = ""
-showSolution (_ : t) = showSolution t
+showProofTree :: Code -> Env -> Stack -> String
+-- new CHP begins:
+showProofTree cod env (NUM cN : _ : NUM ret : _ : _ : NUM lvl : t) =
+  let acc = display "" t
+      acc' = cHead (fst acc ++ " -> ") cN ret cod env
+  in spaces lvl ++ acc' ++ "\n" ++ showProofTree cod env (snd acc)
+
+showProofTree _ _ [] = ""
+
+showProofTree cod env (_ : t) = showProofTree cod env t
+
+
+cHead :: String -> Int -> Int -> Code -> Env -> String
+cHead acc cN ret cod env =
+  let cs = clauses env
+      cThis
+        | ret >= cGoal env = -1
+        | cNext env ret < 0 = last cs
+        | otherwise =
+          cs !! (getPos (cNext env ret) cs - 1)
+      clause
+        | cN < 0 = last cs
+        | otherwise =
+          cs !! (getPos cN cs - 1)
+      realC
+        | cThis /= clause = clause
+        | otherwise = cs !! (getPos clause cs - 1)
+      st = codeToStack [] $ drop realC cod
+  in acc ++ fst (display "" st) where
+  
+  codeToStack :: Stack -> Code -> Stack
+  codeToStack acc (Return : t) = reverse acc
+  
+  codeToStack acc (Unify (STR' s a) : t) =
+    codeToStack (STR s a : acc) t
+    
+  codeToStack acc (Unify (VAR' s _) : t) =
+    codeToStack (VAR s (-1) : acc) t
+    
+  codeToStack acc (_ : t) = codeToStack acc t
+  
+  codeToStack acc [] = reverse acc
+
 
 display :: String -> Stack -> (String, Stack)
 display acc (STR s i : t)
   | i > 0 = display' (acc ++ s ++ "(") t $ i - 1
   | otherwise = (acc ++ s, t)
+
 display acc (VAR s _ : t) = (acc ++ s, t)
+
+display acc _ = (acc, [])
+
 
 display' :: String -> Stack -> Int -> (String, Stack)
 display' acc st i
@@ -92,10 +127,15 @@ display' acc st i
 
 -- the result stack, as it is when prompt is actuated, is called "all" in the subsequent functions.
 showVars :: Stack -> Stack -> String
-showVars all ((VAR s (-1):t)) = s ++ "/" ++ s ++ "\n" ++ showVars all t 
-showVars all (VAR s a : t) = displayTerm (deref all a) all ++ "/" ++ s ++ "\n" ++ showVars all t
+showVars all (VAR s (-1) : t) =
+  s ++ " / " ++ s ++ "\n" ++ showVars all t 
+
+showVars all (VAR s a : t) =
+  displayTerm (deref all a) all ++ " / " ++ s ++ "\n" ++ showVars all t
+
 showVars all (EndEnv : t) = ""
-showVars all (_: t) = showVars all t 
+
+showVars all (_ : t) = showVars all t
 
 
 displayTerm :: Int -> Stack -> String
@@ -110,7 +150,9 @@ displayVars :: String -> Stack -> Stack -> (String, Stack)
 displayVars acc all (STR s i : t)
   | i > 0 = displayVars' (acc ++ s ++ "(") all t $ i - 1
   | otherwise = (acc ++ s, t)
+
 displayVars acc all (VAR s (-1) : t) = (acc ++ s, t)
+
 displayVars acc all (VAR s a : t) = (acc ++ displayTerm (deref all a) all, t)
 
 
@@ -143,6 +185,7 @@ wantMore sto = do
        _ -> do putStrLn "Not a valid input"
                wantMore sto
 
+
 wantMore' :: Storage -> Bool -> IO ()
 wantMore' sto@(st, cod, env, reg, tr, us) more
   | more =
@@ -153,3 +196,13 @@ wantMore' sto@(st, cod, env, reg, tr, us) more
     in nextSolution (st, cod, env, reg', tr, us)
   | otherwise = do putStrLn ""
                    main
+
+
+getPos :: Eq a => a -> [a] -> Int
+getPos = getPos' 0 where
+  
+  getPos' :: Eq a => Int -> a -> [a] -> Int
+  getPos' i x (h : t)
+    | x == h = i
+    | otherwise = getPos' (i + 1) x t
+  getPos' _ _ _ = error "Element could not be found."
