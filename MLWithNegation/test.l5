@@ -1,0 +1,10 @@
+p :-not q(Y).
+q(u).
+a:- b,c, not d,e.
+e:- v,w(a,c,b).
+v:-z.
+z.
+b.
+c.
+w(X,Y,Z).
+:- not p, Y, a.
