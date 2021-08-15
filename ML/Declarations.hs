@@ -62,7 +62,7 @@ data Command
   = Push Arg
   -- | Unification of Arg and a term on the stack is tried.
   | Unify Arg
-  -- | Try to unify current CHP with a clause.
+  -- | Try to unify the current CHP with a clause.
   | Call
   -- | Proof of a clause is finished.
   | Return
@@ -161,8 +161,7 @@ data SyntaxTree =
 
 
 -- | A program clause, part of a syntax tree.
-data PClause =
-  PClause NVLTerm Goal
+data PClause = PClause NVLTerm Goal
   deriving (Show)
 
 

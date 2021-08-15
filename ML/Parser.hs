@@ -1,7 +1,10 @@
 {- |
-Module : Parser
+Module      : Parser
+Description : Takes L5 tokens as input and creates an L5 syntax tree out of these.
 
 The parser takes L5 tokens as input and creates an L5 syntax tree out of these.
+This parser is an LL(1)-parser, i.e. in every step it conciders only the next token
+and it knows no backtracking.
 -}
 module Parser
 (
@@ -17,7 +20,7 @@ import Declarations
 
 -- | Creates a syntax tree out of tokens created by the tokenizer.
 parse :: [(Symbol, Int)] -- ^ List of tokens and their corresponding line in the source code.
-  -> SyntaxTree -- The syntax tree created by the Parser.
+  -> SyntaxTree -- ^ The syntax tree created by the Parser.
 parse s =
   case program s [] of
        ([], p) -> p
