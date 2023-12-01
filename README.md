@@ -1,4 +1,4 @@
-# Runtime Environment for L5, a logical programming language
+# Runtime Environment for L5
 ### Basic:
 * The objective of this project was to write a compiler and runtime environment for L5 programs, where L5 is a version of pure ProLog.
 * Source files in the L5 language need to end with ".l5"
